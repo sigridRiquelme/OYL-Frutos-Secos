@@ -24,11 +24,12 @@ import kotlinx.coroutines.launch
 import com.example.oylfrutossecos.data.local.AppDatabase
 import com.example.oylfrutossecos.data.local.insertarProductosIniciales
 import com.example.oylfrutossecos.data.repository.ProductoRepository
-
+import com.example.oylfrutossecos.data.repository.ClienteRepository
 // ViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModelFactory
-
+import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
+import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModelFactory
 // Pantallas
 import com.example.oylfrutossecos.ui.screens.BienvenidaScreen
 import com.example.oylfrutossecos.ui.screens.LoginScreen
@@ -60,6 +61,17 @@ class MainActivity : ComponentActivity() {
             ProductoViewModelFactory(repository)
         )[ProductoViewModel::class.java]
 
+        // Repository para gestionar los clientes
+        val clienteRepository = ClienteRepository(
+            database.clienteDao()
+        )
+
+        // ViewModel para registrar clientes
+        val clienteViewModel = ViewModelProvider(
+            this,
+            ClienteViewModelFactory(clienteRepository)
+        )[ClienteViewModel::class.java]
+
         // 4. MOSTRAR NUESTRA APLICACION
         setContent {
 
@@ -71,6 +83,10 @@ class MainActivity : ComponentActivity() {
 
                 var rolActual by remember {
                     mutableStateOf("Cliente")
+                }
+
+                var clienteIdActual by remember {
+                    mutableStateOf<Int?>(null)
                 }
 
                 Scaffold(
@@ -93,41 +109,45 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+
                         "login" -> {
                             LoginScreen(
+                                clienteViewModel = clienteViewModel,
                                 modifier = Modifier.padding(innerPadding),
 
                                 onRegistrarse = {
                                     pantallaActual = "registro"
                                 },
 
+                                // Acceso temporal para el administrador
                                 onIngresar = { rol, usuario, clave ->
 
-                                    val correcto = when (rol) {
-
-                                        "Administrador" ->
+                                    val correcto = rol == "Administrador" &&
                                             usuario == "admin" &&
-                                                    clave == "admin123"
-
-                                        "Cliente" ->
-                                            usuario == "cliente" &&
-                                                    clave == "cliente123"
-
-                                        else -> false
-                                    }
+                                            clave == "admin123"
 
                                     if (correcto) {
-                                        rolActual = rol
+                                        rolActual = "Administrador"
+                                        clienteIdActual = null
                                         pantallaActual = "dashboard"
                                     }
 
                                     correcto
+                                },
+
+                                // Acceso real de clientes mediante Room
+                                onClienteAutenticado = { clienteId ->
+                                    clienteIdActual = clienteId
+                                    rolActual = "Cliente"
+                                    pantallaActual = "dashboard"
                                 }
                             )
                         }
 
+
                         "registro" -> {
                             RegistroScreen(
+                                clienteViewModel = clienteViewModel,
                                 modifier = Modifier.padding(innerPadding),
 
                                 onVolverLogin = {
