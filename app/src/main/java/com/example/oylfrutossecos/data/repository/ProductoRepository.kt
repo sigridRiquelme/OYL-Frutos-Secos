@@ -33,8 +33,7 @@ class ProductoRepository(
         productoDao.eliminarProducto(producto)
     }
 
-
-    // Crear un nuevo producto en la base de datos
+    // Crear un nuevo producto
     suspend fun crearProducto(
         nombre: String,
         categoria: String,
@@ -58,4 +57,33 @@ class ProductoRepository(
         productoDao.insertarProducto(nuevoProducto)
     }
 
+    // NUEVO: Editar un producto existente
+    suspend fun editarProducto(
+        id: Int,
+        nombre: String,
+        categoria: String,
+        precio: Int,
+        stock: Int,
+        descripcion: String,
+        presentacion: String
+    ) {
+
+        val productoActual =
+            productoDao.obtenerProductoPorId(id)
+                ?: throw IllegalArgumentException(
+                    "Producto no encontrado"
+                )
+
+        // Modificar los campos sin cambiar el ID
+        val productoModificado = productoActual.copy(
+            nombre = nombre,
+            categoria = categoria,
+            precio = precio,
+            stock = stock,
+            descripcion = descripcion,
+            presentacion = presentacion
+        )
+
+        productoDao.actualizarProducto(productoModificado)
+    }
 }

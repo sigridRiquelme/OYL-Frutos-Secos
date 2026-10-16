@@ -117,8 +117,10 @@ fun DashboardScreen(
                 }
 
 
+
                 "GestionProductos" -> {
                     if (rol == "Administrador") {
+
                         GestionProductosScreen(
                             productos = productosCatalogo,
 
@@ -133,10 +135,19 @@ fun DashboardScreen(
                                 )
                             },
 
+                            onEditarProducto = { id, datos, onResultado ->
+                                productoViewModel.editarProducto(
+                                    id,
+                                    datos,
+                                    onResultado
+                                )
+                            },
+
                             modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
+
                 // NUEVA PANTALLA: CATALOGO
 
                 "Catalogo" -> {

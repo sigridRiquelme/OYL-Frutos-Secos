@@ -18,34 +18,88 @@ fun GestionProductosScreen(
     productos: List<ProductoCatalogo>,
     onVolver: () -> Unit,
     onCrearProducto: (DatosNuevoProducto, (Boolean) -> Unit) -> Unit,
+    onEditarProducto: (Int, DatosNuevoProducto, (Boolean) -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
-    // Controla si mostramos el formulario o el listado
+    // Controlar qué pantalla mostramos
     var mostrandoFormulario by rememberSaveable {
         mutableStateOf(false)
     }
 
-    // Mostrar formulario para crear un producto
-    if (mostrandoFormulario) {
-
-        FormularioProductoScreen(
-            onVolver = {
-                mostrandoFormulario = false
-            },
-            onGuardar = onCrearProducto,
-            modifier = modifier
-        )
-
-        return
+    // ID del producto que estamos editando
+    // Si es null, significa que crearemos uno nuevo
+    var idProductoEditando by rememberSaveable {
+        mutableStateOf<Int?>(null)
     }
 
-    // Texto utilizado para buscar productos
     var busqueda by rememberSaveable {
         mutableStateOf("")
     }
 
-    // Filtrar los productos por nombre
+    // Buscar el producto seleccionado
+    val productoEnEdicion = idProductoEditando?.let { id ->
+        productos.firstOrNull { it.id == id }
+    }
+
+    // Mostrar formulario de creación o edición
+    if (mostrandoFormulario) {
+
+        if (idProductoEditando != null &&
+            productoEnEdicion == null
+        ) {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text("Producto no disponible.")
+
+                TextButton(
+                    onClick = {
+                        mostrandoFormulario = false
+                        idProductoEditando = null
+                    }
+                ) {
+                    Text("Volver al listado")
+                }
+            }
+        } else {
+
+            FormularioProductoScreen(
+                producto = productoEnEdicion,
+
+                onVolver = {
+                    mostrandoFormulario = false
+                    idProductoEditando = null
+                },
+
+                onGuardar = { datos, onResultado ->
+
+                    val id = idProductoEditando
+
+                    if (id == null) {
+                        onCrearProducto(
+                            datos,
+                            onResultado
+                        )
+                    } else {
+                        onEditarProducto(
+                            id,
+                            datos,
+                            onResultado
+                        )
+                    }
+                },
+
+                modifier = modifier
+            )
+        }
+
+        return
+    }
+
+    // Filtrar productos por nombre
     val productosFiltrados = productos.filter {
         it.nombre.contains(
             busqueda,
@@ -60,27 +114,26 @@ fun GestionProductosScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        // Volver al Dashboard
+        // Regresar al Dashboard
         TextButton(
             onClick = onVolver
         ) {
             Text("← Volver al inicio")
         }
 
-        // Título principal
         Text(
             text = "Gestión de Productos",
             style = MaterialTheme.typography.headlineMedium
         )
 
-        // Cantidad de productos registrados
         Text(
             text = "Productos registrados: ${productos.size}"
         )
 
-        // NUEVO: Botón para abrir formulario
+        // Crear nuevo producto
         Button(
             onClick = {
+                idProductoEditando = null
                 mostrandoFormulario = true
             },
             modifier = Modifier.fillMaxWidth()
@@ -88,7 +141,7 @@ fun GestionProductosScreen(
             Text("+ Nuevo producto")
         }
 
-        // Buscador de productos
+        // Buscador
         OutlinedTextField(
             value = busqueda,
             onValueChange = {
@@ -101,7 +154,7 @@ fun GestionProductosScreen(
             singleLine = true
         )
 
-        // Mostrar mensaje si no hay resultados
+        // Listado de productos
         if (productosFiltrados.isEmpty()) {
 
             Box(
@@ -115,7 +168,6 @@ fun GestionProductosScreen(
 
         } else {
 
-            // Listado de productos desde Room
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -133,7 +185,7 @@ fun GestionProductosScreen(
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement =
-                                Arrangement.spacedBy(6.dp)
+                                Arrangement.spacedBy(8.dp)
                         ) {
 
                             Text(
@@ -156,6 +208,19 @@ fun GestionProductosScreen(
                             Text(
                                 text = "Presentación: ${producto.presentacion}"
                             )
+
+                            HorizontalDivider()
+
+                            // NUEVO: Botón para editar
+                            OutlinedButton(
+                                onClick = {
+                                    idProductoEditando = producto.id
+                                    mostrandoFormulario = true
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Editar")
+                            }
                         }
                     }
                 }
