@@ -118,17 +118,27 @@ fun DashboardScreen(
 
 
 
+
                 "GestionProductos" -> {
+
                     if (rol == "Administrador") {
+
+                        // Leer estados reales desde Room
+                        val estadosProductos = productosRoom.associate {
+                            it.id to it.activo
+                        }
 
                         GestionProductosScreen(
                             productos = productosCatalogo,
+
+                            estadosProductos = estadosProductos,
 
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"
                             },
 
                             onCrearProducto = { datos, onResultado ->
+
                                 productoViewModel.crearProducto(
                                     datos,
                                     onResultado
@@ -136,9 +146,20 @@ fun DashboardScreen(
                             },
 
                             onEditarProducto = { id, datos, onResultado ->
+
                                 productoViewModel.editarProducto(
                                     id,
                                     datos,
+                                    onResultado
+                                )
+                            },
+
+                            // NUEVO: Conectar cambio de estado
+                            onCambiarEstado = { id, activo, onResultado ->
+
+                                productoViewModel.cambiarEstadoProducto(
+                                    id,
+                                    activo,
                                     onResultado
                                 )
                             },
@@ -147,6 +168,7 @@ fun DashboardScreen(
                         )
                     }
                 }
+
 
                 // NUEVA PANTALLA: CATALOGO
 

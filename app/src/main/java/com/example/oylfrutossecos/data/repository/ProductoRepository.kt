@@ -3,6 +3,7 @@ package com.example.oylfrutossecos.data.repository
 
 import com.example.oylfrutossecos.data.local.dao.ProductoDao
 import com.example.oylfrutossecos.data.local.entity.ProductoEntity
+
 import kotlinx.coroutines.flow.Flow
 
 class ProductoRepository(
@@ -13,27 +14,27 @@ class ProductoRepository(
     val productos: Flow<List<ProductoEntity>> =
         productoDao.obtenerProductos()
 
-    // Obtener un producto por su ID
+    // Obtener producto por ID
     suspend fun obtenerProductoPorId(id: Int): ProductoEntity? {
         return productoDao.obtenerProductoPorId(id)
     }
 
-    // Guardar un producto
+    // Guardar producto
     suspend fun guardarProducto(producto: ProductoEntity) {
         productoDao.guardarProducto(producto)
     }
 
-    // Actualizar un producto
+    // Actualizar producto
     suspend fun actualizarProducto(producto: ProductoEntity) {
         productoDao.actualizarProducto(producto)
     }
 
-    // Eliminar un producto
+    // Eliminar producto
     suspend fun eliminarProducto(producto: ProductoEntity) {
         productoDao.eliminarProducto(producto)
     }
 
-    // Crear un nuevo producto
+    // Crear producto
     suspend fun crearProducto(
         nombre: String,
         categoria: String,
@@ -42,6 +43,7 @@ class ProductoRepository(
         descripcion: String,
         presentacion: String
     ) {
+
         val nuevoId = productoDao.obtenerSiguienteId()
 
         val nuevoProducto = ProductoEntity(
@@ -51,13 +53,14 @@ class ProductoRepository(
             precio = precio,
             stock = stock,
             descripcion = descripcion,
-            presentacion = presentacion
+            presentacion = presentacion,
+            activo = true
         )
 
         productoDao.insertarProducto(nuevoProducto)
     }
 
-    // NUEVO: Editar un producto existente
+    // Editar producto
     suspend fun editarProducto(
         id: Int,
         nombre: String,
@@ -74,7 +77,6 @@ class ProductoRepository(
                     "Producto no encontrado"
                 )
 
-        // Modificar los campos sin cambiar el ID
         val productoModificado = productoActual.copy(
             nombre = nombre,
             categoria = categoria,
@@ -85,5 +87,21 @@ class ProductoRepository(
         )
 
         productoDao.actualizarProducto(productoModificado)
+    }
+
+    // NUEVO: Cambiar estado del producto
+    suspend fun cambiarEstadoProducto(
+        id: Int,
+        activo: Boolean
+    ) {
+
+        val filasModificadas =
+            productoDao.cambiarEstadoProducto(id, activo)
+
+        if (filasModificadas == 0) {
+            throw IllegalArgumentException(
+                "No se encontró el producto"
+            )
+        }
     }
 }

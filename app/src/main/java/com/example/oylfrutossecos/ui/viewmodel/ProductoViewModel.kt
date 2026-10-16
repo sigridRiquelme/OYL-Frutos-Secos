@@ -19,7 +19,7 @@ class ProductoViewModel(
     private val repository: ProductoRepository
 ) : ViewModel() {
 
-    // Observar productos guardados en Room
+    // Lista observable desde Room
     val productos: StateFlow<List<ProductoEntity>> =
         repository.productos.stateIn(
             scope = viewModelScope,
@@ -27,11 +27,12 @@ class ProductoViewModel(
             initialValue = emptyList()
         )
 
-    // Crear un producto nuevo
+    // Crear nuevo producto
     fun crearProducto(
         datos: DatosNuevoProducto,
         onResultado: (Boolean) -> Unit
     ) {
+
         val errores = ValidadorProducto.validar(datos)
 
         if (errores.isNotEmpty()) {
@@ -41,6 +42,7 @@ class ProductoViewModel(
 
         viewModelScope.launch {
             try {
+
                 repository.crearProducto(
                     nombre = datos.nombre.trim(),
                     categoria = datos.categoria,
@@ -58,12 +60,13 @@ class ProductoViewModel(
         }
     }
 
-    // NUEVO: Editar un producto existente
+    // Editar producto
     fun editarProducto(
         id: Int,
         datos: DatosNuevoProducto,
         onResultado: (Boolean) -> Unit
     ) {
+
         val errores = ValidadorProducto.validar(datos)
 
         if (errores.isNotEmpty()) {
@@ -73,6 +76,7 @@ class ProductoViewModel(
 
         viewModelScope.launch {
             try {
+
                 repository.editarProducto(
                     id = id,
                     nombre = datos.nombre.trim(),
@@ -81,6 +85,29 @@ class ProductoViewModel(
                     stock = datos.stock.toInt(),
                     descripcion = datos.descripcion.trim(),
                     presentacion = datos.presentacion.trim()
+                )
+
+                onResultado(true)
+
+            } catch (error: Exception) {
+                onResultado(false)
+            }
+        }
+    }
+
+    // NUEVO: Activar o desactivar producto
+    fun cambiarEstadoProducto(
+        id: Int,
+        activo: Boolean,
+        onResultado: (Boolean) -> Unit
+    ) {
+
+        viewModelScope.launch {
+            try {
+
+                repository.cambiarEstadoProducto(
+                    id = id,
+                    activo = activo
                 )
 
                 onResultado(true)
@@ -105,6 +132,7 @@ class ProductoViewModelFactory(
                 ProductoViewModel::class.java
             )
         ) {
+
             @Suppress("UNCHECKED_CAST")
             return ProductoViewModel(repository) as T
         }
