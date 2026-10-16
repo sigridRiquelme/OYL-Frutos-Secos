@@ -43,6 +43,7 @@ fun DashboardScreen(
     }
 
     // Adaptamos la entidad de Room al modelo de nuestras pantallas
+
     val productosCatalogo = productosRoom.map { producto ->
         ProductoCatalogo(
             id = producto.id,
@@ -51,9 +52,14 @@ fun DashboardScreen(
             precio = producto.precio,
             stock = producto.stock,
             descripcion = producto.descripcion,
-            presentacion = producto.presentacion
+            presentacion = producto.presentacion,
+
+            // Datos adicionales recuperados de Room
+            imagenUri = producto.imagenUri,
+            activo = producto.activo
         )
     }
+
 
     var pantallaSeleccionada by rememberSaveable {
         mutableStateOf("Inicio")
