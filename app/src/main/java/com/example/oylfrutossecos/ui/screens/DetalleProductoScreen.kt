@@ -58,19 +58,16 @@ fun DetalleProductoScreen(
             Text("← Volver al catálogo")
         }
 
-        // Imagen pendiente
-        Box(
+
+// Mostrar la fotografía real del producto
+        ImagenProductoVistaPrevia(
+            imagenUri = producto.imagenUri,
+
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
-                .background(
-                    Color(0xFFE5EDD9),
-                    RoundedCornerShape(16.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Imagen pendiente")
-        }
+                .height(220.dp)
+        )
+
 
         // Información del producto
         Text(

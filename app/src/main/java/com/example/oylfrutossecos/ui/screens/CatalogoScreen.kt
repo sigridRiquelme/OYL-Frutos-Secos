@@ -1,19 +1,21 @@
 
 package com.example.oylfrutossecos.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.clickable
 
-// Representa un producto de nuestro catálogo
+// Producto utilizado por el catálogo y otras pantallas
 data class ProductoCatalogo(
     val id: Int,
     val nombre: String,
@@ -21,7 +23,11 @@ data class ProductoCatalogo(
     val precio: Int,
     val stock: Int,
     val descripcion: String = "Producto natural de OYL Frutos Secos.",
-    val presentacion: String = "Bolsa de 250 g"
+    val presentacion: String = "Bolsa de 250 g",
+
+    // Fotografía y estado recuperados desde Room
+    val imagenUri: String? = null,
+    val activo: Boolean = true
 )
 
 @Composable
@@ -30,7 +36,6 @@ fun CatalogoScreen(
     modifier: Modifier = Modifier,
     onVerDetalle: (ProductoCatalogo) -> Unit = {}
 ) {
-
 
     var busqueda by rememberSaveable {
         mutableStateOf("")
@@ -47,7 +52,8 @@ fun CatalogoScreen(
         "Deshidratados"
     )
 
-    // Filtramos los productos
+    // Mostrar solamente productos activos.
+    // Los desactivados siguen guardados en Room.
     val productosFiltrados = productos.filter { producto ->
 
         val coincideNombre = producto.nombre.contains(
@@ -59,7 +65,9 @@ fun CatalogoScreen(
             categoriaSeleccionada == "Todos" ||
                     producto.categoria == categoriaSeleccionada
 
-        coincideNombre && coincideCategoria
+        producto.activo &&
+                coincideNombre &&
+                coincideCategoria
     }
 
     Column(
@@ -75,21 +83,30 @@ fun CatalogoScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // BUSCADOR
         OutlinedTextField(
             value = busqueda,
-            onValueChange = { busqueda = it },
-            label = { Text("Buscar productos") },
+
+            onValueChange = {
+                busqueda = it
+            },
+
+            label = {
+                Text("Buscar productos")
+            },
+
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Filtros por categoría
+        // FILTROS POR CATEGORÍA
         Row(
             modifier = Modifier.horizontalScroll(
                 rememberScrollState()
             ),
+
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
@@ -97,9 +114,11 @@ fun CatalogoScreen(
 
                 FilterChip(
                     selected = categoriaSeleccionada == categoria,
+
                     onClick = {
                         categoriaSeleccionada = categoria
                     },
+
                     label = {
                         Text(categoria)
                     }
@@ -107,48 +126,102 @@ fun CatalogoScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Lista de productos
+        Text(
+            text = "Productos encontrados: ${productosFiltrados.size}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // LISTADO DE PRODUCTOS
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            items(
-                items = productosFiltrados,
-                key = { it.id }
-            ) { producto ->
+            if (productosFiltrados.isEmpty()) {
 
-                ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            onVerDetalle(producto)
-                        }
-                ) {
+                item {
 
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement =
-                            Arrangement.spacedBy(6.dp)
+                    Text(
+                        text = "No se encontraron productos disponibles.",
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+
+            } else {
+
+                items(
+                    items = productosFiltrados,
+                    key = { it.id }
+                ) { producto ->
+
+                    ElevatedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onVerDetalle(producto)
+                            }
                     ) {
 
-                        Text(
-                            text = producto.nombre,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Column(
+                            modifier = Modifier.padding(16.dp),
 
-                        Text(
-                            text = "Categoría: ${producto.categoria}"
-                        )
+                            verticalArrangement =
+                                Arrangement.spacedBy(8.dp)
+                        ) {
 
-                        Text(
-                            text = "Precio: $${producto.precio}"
-                        )
+                            // FOTOGRAFÍA GUARDADA EN ROOM
+                            if (!producto.imagenUri.isNullOrBlank()) {
 
-                        Text(
-                            text = "Stock: ${producto.stock}"
-                        )
+                                ImagenProductoVistaPrevia(
+                                    imagenUri = producto.imagenUri,
+
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(170.dp)
+                                )
+                            }
+
+                            Text(
+                                text = producto.nombre,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+
+                            Text(
+                                text = "Categoría: ${producto.categoria}"
+                            )
+
+                            Text(
+                                text = "Presentación: ${producto.presentacion}"
+                            )
+
+                            Text(
+                                text = "Precio: $${producto.precio}",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            Text(
+                                text = if (producto.stock == 0) {
+                                    "Sin existencias"
+                                } else {
+                                    "Stock disponible: ${producto.stock}"
+                                },
+
+                                color = if (producto.stock == 0) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+
+                            Text(
+                                text = "Toca para ver el detalle",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
             }

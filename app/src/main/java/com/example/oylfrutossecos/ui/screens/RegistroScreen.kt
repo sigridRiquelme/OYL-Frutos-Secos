@@ -11,15 +11,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
+import com.example.oylfrutossecos.ui.viewmodel.EstadoRegistro
 
 @Composable
 fun RegistroScreen(
+    clienteViewModel: ClienteViewModel,
     modifier: Modifier = Modifier,
     onVolverLogin: () -> Unit = {}
 ) {
 
     var nombre by remember { mutableStateOf("") }
-    var alias by remember { mutableStateOf("") }
+    var nombreUsuario by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
@@ -28,8 +32,17 @@ fun RegistroScreen(
     var mostrarErrores by remember { mutableStateOf(false) }
     var mensaje by remember { mutableStateOf("") }
 
+    val estadoRegistro by clienteViewModel.estadoRegistro.collectAsState()
+
+    LaunchedEffect(estadoRegistro) {
+        if (estadoRegistro == EstadoRegistro.Exito) {
+            clienteViewModel.limpiarEstado()
+            onVolverLogin()
+        }
+    }
+
     val nombreInvalido = nombre.trim().length < 3
-    val aliasInvalido = alias.trim().length < 3
+    val nombreUsuarioInvalido = nombreUsuario.trim().length < 3
     val correoInvalido = !android.util.Patterns
         .EMAIL_ADDRESS.matcher(correo).matches()
     val telefonoInvalido = telefono.count { it.isDigit() } < 9
@@ -69,18 +82,40 @@ fun RegistroScreen(
             singleLine = true
         )
 
+
         OutlinedTextField(
-            value = alias,
-            onValueChange = { alias = it },
-            label = { Text("Alias") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = mostrarErrores && aliasInvalido,
-            supportingText = {
-                if (mostrarErrores && aliasInvalido)
-                    Text("Ingresa al menos 3 caracteres")
+            value = nombreUsuario,
+            onValueChange = {
+                nombreUsuario = it
+
+                // Limpiar el error al comenzar a corregirlo
+                if (estadoRegistro is EstadoRegistro.Error) {
+                    clienteViewModel.limpiarEstado()
+                }
             },
+            label = { Text("Nombre de usuario") },
+            modifier = Modifier.fillMaxWidth(),
+
+            isError = (mostrarErrores && nombreUsuarioInvalido) ||
+                    (estadoRegistro is EstadoRegistro.Error &&
+                            (estadoRegistro as EstadoRegistro.Error).mensaje ==
+                            "El nombre de usuario ya existe"),
+
+            supportingText = {
+                if (mostrarErrores && nombreUsuarioInvalido) {
+                    Text("Ingresa al menos 3 caracteres")
+                } else if (
+                    estadoRegistro is EstadoRegistro.Error &&
+                    (estadoRegistro as EstadoRegistro.Error).mensaje ==
+                    "El nombre de usuario ya existe"
+                ) {
+                    Text("El nombre de usuario ya existe")
+                }
+            },
+
             singleLine = true
         )
+
 
         OutlinedTextField(
             value = correo,
@@ -133,25 +168,51 @@ fun RegistroScreen(
             onClick = {
                 mostrarErrores = true
 
-                mensaje = if (
+                if (
                     !nombreInvalido &&
-                    !aliasInvalido &&
+                    !nombreUsuarioInvalido &&
                     !correoInvalido &&
                     !telefonoInvalido &&
                     !contrasenaInvalida
                 ) {
-                    "Datos válidos. Pendiente guardar la cuenta."
+                    mensaje = ""
+
+                    clienteViewModel.registrarCliente(
+                        nombre = nombre,
+                        nombreUsuario = nombreUsuario,
+                        correo = correo,
+                        telefono = telefono,
+                        direccion = direccion,
+                        contrasena = contrasena
+                    )
                 } else {
-                    "Corrige los campos marcados."
+                    mensaje = "Corrige los campos marcados."
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = estadoRegistro != EstadoRegistro.Cargando
         ) {
-            Text("Crear Cuenta")
+            Text(
+                if (estadoRegistro == EstadoRegistro.Cargando)
+                    "Guardando..."
+                else
+                    "Crear Cuenta"
+            )
         }
 
         if (mensaje.isNotEmpty()) {
             Text(text = mensaje)
+        }
+
+        if (estadoRegistro is EstadoRegistro.Error) {
+            val error = (estadoRegistro as EstadoRegistro.Error).mensaje
+
+            if (error != "El nombre de usuario ya existe") {
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
 
         TextButton(
