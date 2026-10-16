@@ -1,4 +1,3 @@
-
 package com.example.oylfrutossecos
 
 import android.os.Bundle
@@ -164,9 +163,15 @@ class MainActivity : ComponentActivity() {
 
                                 productoViewModel = productoViewModel,
 
-                                // Datos del cliente que inició sesión
+                                // Datos del cliente que inicio sesion
                                 clienteViewModel = clienteViewModel,
-                                clienteId = clienteIdActual
+                                clienteId = clienteIdActual,
+                                onCerrarSesion = {
+                                    clienteIdActual = null
+                                    clienteViewModel.limpiarEstadoLogin()
+                                    rolActual = "Cliente"
+                                    pantallaActual = "login"
+                                }
                             )
                         }
 

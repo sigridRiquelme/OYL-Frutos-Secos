@@ -1,6 +1,7 @@
 
 package com.example.oylfrutossecos.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -22,5 +23,10 @@ data class ProductoEntity(
 
     val presentacion: String,
 
-    val imagenUri: String? = null
+    val imagenUri: String? = null,
+
+    // NUEVO: Estado del producto
+    // true = activo, false = inactivo
+    @ColumnInfo(defaultValue = "1")
+    val activo: Boolean = true
 )

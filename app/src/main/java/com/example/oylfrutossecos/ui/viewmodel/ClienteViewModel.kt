@@ -151,6 +151,12 @@ class ClienteViewModel(
                 _estadoRegistro.value = EstadoRegistro.Exito
 
             } catch (e: Exception) {
+                android.util.Log.e(
+                    "OYL_REGISTRO",
+                    "Error al registrar cliente",
+                    e
+                )
+
                 _estadoRegistro.value = EstadoRegistro.Error(
                     "No se pudo registrar el cliente. Intenta nuevamente."
                 )

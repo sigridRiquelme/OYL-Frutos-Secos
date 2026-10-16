@@ -5,22 +5,26 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+
 import com.example.oylfrutossecos.data.local.dao.ProductoDao
+import com.example.oylfrutossecos.data.local.dao.ClienteDao
+
 import com.example.oylfrutossecos.data.local.entity.ProductoEntity
 import com.example.oylfrutossecos.data.local.entity.ClienteEntity
+
 @Database(
     entities = [
         ProductoEntity::class,
         ClienteEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun productoDao(): ProductoDao
-    abstract fun clienteDao():
-            com.example.oylfrutossecos.data.local.dao.ClienteDao
+
+    abstract fun clienteDao(): ClienteDao
 
     companion object {
 
@@ -35,12 +39,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "oyl_frutos_secos.db"
-                )
-                    .addMigrations(MIGRATION_1_2)
-                    .build()
+                ).build()
 
                 INSTANCE = instancia
-
                 instancia
             }
         }
