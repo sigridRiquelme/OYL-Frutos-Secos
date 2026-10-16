@@ -1,4 +1,7 @@
+
 package com.example.oylfrutossecos.ui.screens
+
+import android.widget.Toast
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,8 +12,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModel
+import com.example.oylfrutossecos.data.local.PedidoLocalStore
+import com.example.oylfrutossecos.data.local.PedidoLocal
+import com.example.oylfrutossecos.data.local.DetallePedidoLocal
 
 @Composable
 fun DashboardScreen(
@@ -22,7 +30,17 @@ fun DashboardScreen(
     // Productos observados desde Room mediante MVVM
     val productosRoom by productoViewModel.productos.collectAsState()
 
-    // Adaptamos la entidad de Room al modelo que ya usan nuestras pantallas
+    // Acceso al almacenamiento del dispositivo
+    val context = LocalContext.current
+
+    // Pedidos registrados localmente
+    var pedidosGuardados by remember(context) {
+        mutableStateOf<List<PedidoLocal>>(
+            PedidoLocalStore.obtenerPedidos(context)
+        )
+    }
+
+    // Adaptamos la entidad de Room al modelo de nuestras pantallas
     val productosCatalogo = productosRoom.map { producto ->
         ProductoCatalogo(
             id = producto.id,
@@ -39,7 +57,7 @@ fun DashboardScreen(
         mutableStateOf("Inicio")
     }
 
-// Producto que llega desde el escáner QR
+    // Producto que llega desde el escáner QR
     var idProductoDesdeQR by rememberSaveable {
         mutableStateOf<Int?>(null)
     }
@@ -52,6 +70,7 @@ fun DashboardScreen(
         mutableStateOf<ProductoCatalogo?>(null)
     }
 
+    // Carrito del cliente
     val carrito = remember {
         mutableStateMapOf<Int, Int>()
     }
@@ -60,10 +79,7 @@ fun DashboardScreen(
         mutableStateMapOf<Int, ProductoCatalogo>()
     }
 
-    var contadorPedidosDemo by rememberSaveable {
-        mutableIntStateOf(0)
-    }
-
+    // Información para la pantalla de pedido exitoso
     var numeroPedidoDemo by rememberSaveable {
         mutableStateOf("")
     }
@@ -76,6 +92,7 @@ fun DashboardScreen(
         mutableStateOf("")
     }
 
+    // Navegación inferior
     val opciones = listOf(
         "Inicio" to "🏠",
         "Mapa" to "📍",
@@ -88,13 +105,13 @@ fun DashboardScreen(
         modifier = modifier.fillMaxSize()
     ) {
 
-        // Contenido principal
         Box(
             modifier = Modifier.weight(1f)
         ) {
 
             when (pantallaSeleccionada) {
 
+                // INICIO
                 "Inicio" -> {
 
                     InicioDashboard(
@@ -131,22 +148,20 @@ fun DashboardScreen(
                             filtroInventarioInicial = "Todos"
                             pantallaSeleccionada = "GestionInventario"
                         }
-
                     )
-
                 }
 
+                // MAPA
                 "Mapa" -> {
+
                     MapaScreen(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
 
-
-
+                // ESCÁNER QR
                 "QR" -> {
 
-                    // Consultar estados reales de Room
                     val estadosProductos = productosRoom.associate {
                         it.id to it.activo
                     }
@@ -173,22 +188,15 @@ fun DashboardScreen(
                     )
                 }
 
-
-
-
-
-
-
+                // GESTIÓN DE PRODUCTOS
                 "GestionProductos" -> {
 
                     if (rol == "Administrador") {
 
-                        // Estados recuperados desde Room
                         val estadosProductos = productosRoom.associate {
                             it.id to it.activo
                         }
 
-                        // NUEVO: Fotografías recuperadas desde Room
                         val imagenesProductos = productosRoom.associate {
                             it.id to it.imagenUri
                         }
@@ -198,7 +206,6 @@ fun DashboardScreen(
 
                             estadosProductos = estadosProductos,
 
-                            // NUEVO: Entregar fotografías
                             imagenesProductos = imagenesProductos,
 
                             onVolver = {
@@ -233,13 +240,11 @@ fun DashboardScreen(
                     }
                 }
 
-
-
+                // GESTIÓN DE INVENTARIO
                 "GestionInventario" -> {
 
                     if (rol == "Administrador") {
 
-                        // Estados recuperados desde Room
                         val estadosProductos = productosRoom.associate {
                             it.id to it.activo
                         }
@@ -257,7 +262,6 @@ fun DashboardScreen(
                                 pantallaSeleccionada = "Inicio"
                             },
 
-                            // NUEVO: Conectar ajustes de inventario
                             onAjustarStock = {
                                     id,
                                     cantidadTexto,
@@ -277,14 +281,66 @@ fun DashboardScreen(
                     }
                 }
 
+                // GESTIÓN DE PEDIDOS
+                "Pedidos" -> {
 
+                    if (rol == "Administrador") {
 
-                // NUEVA PANTALLA: CATALOGO
+                        GestionPedidosScreen(
+                            pedidos = pedidosGuardados,
 
+                            onVolver = {
+                                pantallaSeleccionada = "Inicio"
+                            },
+
+                            onCambiarEstado = {
+                                    numero,
+                                    nuevoEstado,
+                                    onResultado ->
+
+                                try {
+
+                                    pedidosGuardados =
+                                        PedidoLocalStore.actualizarEstado(
+                                            context = context,
+                                            numero = numero,
+                                            nuevoEstado = nuevoEstado
+                                        )
+
+                                    onResultado(null)
+
+                                } catch (error: Exception) {
+
+                                    onResultado(
+                                        "No se pudo actualizar el estado del pedido."
+                                    )
+                                }
+                            },
+
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                    } else {
+
+                        // La pantalla de pedidos específica del Cliente
+                        // se implementará en una etapa posterior
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Pantalla: Pedidos")
+                        }
+                    }
+                }
+
+                // CATÁLOGO
                 "Catalogo" -> {
+
                     CatalogoScreen(
                         productos = productosCatalogo,
+
                         modifier = Modifier.fillMaxSize(),
+
                         onVerDetalle = { producto ->
                             productoSeleccionado = producto
                             pantallaSeleccionada = "Detalle"
@@ -292,6 +348,7 @@ fun DashboardScreen(
                     )
                 }
 
+                // DETALLE DE PRODUCTO
                 "Detalle" -> {
 
                     val producto = productoSeleccionado
@@ -300,6 +357,7 @@ fun DashboardScreen(
 
                         DetalleProductoScreen(
                             producto = producto,
+
                             rol = rol,
 
                             cantidadYaAgregada =
@@ -318,6 +376,7 @@ fun DashboardScreen(
                                         ).coerceAtLeast(0)
 
                                 if (cantidad in 1..maximo) {
+
                                     carrito[producto.id] = actual + cantidad
 
                                     productosCarrito[producto.id] = producto
@@ -329,11 +388,12 @@ fun DashboardScreen(
                     }
                 }
 
-
+                // CARRITO
                 "Carrito" -> {
 
                     CarritoScreen(
                         productos = productosCarrito.values.toList(),
+
                         cantidades = carrito,
 
                         onCambiarCantidad = { id, nuevaCantidad ->
@@ -342,7 +402,6 @@ fun DashboardScreen(
 
                             if (nuevaCantidad <= 0) {
 
-                                // Eliminar producto del carrito
                                 carrito.remove(id)
                                 productosCarrito.remove(id)
 
@@ -351,7 +410,6 @@ fun DashboardScreen(
                                 nuevaCantidad <= producto.stock
                             ) {
 
-                                // Actualizar cantidad
                                 carrito[id] = nuevaCantidad
                             }
                         },
@@ -368,45 +426,90 @@ fun DashboardScreen(
                     )
                 }
 
-
+                // CONFIRMACIÓN DE PEDIDO
                 "Confirmacion" -> {
 
                     ConfirmacionPedidoScreen(
                         productos = productosCarrito.values.toList(),
+
                         cantidades = carrito,
 
                         onVolver = {
                             pantallaSeleccionada = "Carrito"
                         },
 
-                        onConfirmar = { _, _, modalidad, _ ->
+                        onConfirmar = {
+                                nombre,
+                                telefono,
+                                modalidad,
+                                direccion ->
 
-                            // Guardar el total antes de vaciar el carrito
-                            totalPedidoDemo = productosCarrito.values.sumOf {
-                                    producto ->
-                                producto.precio * (carrito[producto.id] ?: 0)
+                            try {
+
+                                // Preparar los productos de la compra
+                                val detallesPedido =
+                                    productosCarrito.values.mapNotNull { producto ->
+
+                                        val cantidad =
+                                            carrito[producto.id] ?: 0
+
+                                        if (cantidad > 0) {
+
+                                            DetallePedidoLocal(
+                                                idProducto = producto.id,
+                                                nombre = producto.nombre,
+                                                cantidad = cantidad,
+                                                precioUnitario = producto.precio
+                                            )
+
+                                        } else {
+
+                                            null
+                                        }
+                                    }
+
+                                // Guardar realmente el pedido
+                                val pedido = PedidoLocalStore.registrarPedido(
+                                    context = context,
+                                    nombreCliente = nombre,
+                                    telefono = telefono,
+                                    modalidad = modalidad,
+                                    direccion = direccion,
+                                    productos = detallesPedido
+                                )
+
+                                // Actualizar historial de pedidos
+                                pedidosGuardados = pedidosGuardados + pedido
+
+                                // Guardar datos para pantalla de éxito
+                                numeroPedidoDemo = pedido.numero
+                                totalPedidoDemo = pedido.total
+                                modalidadPedidoDemo = pedido.modalidad
+
+                                // Vaciar carrito SOLO después de guardar
+                                carrito.clear()
+                                productosCarrito.clear()
+
+                                // Mostrar confirmación exitosa
+                                pantallaSeleccionada = "PedidoExito"
+
+                            } catch (error: Exception) {
+
+                                // Si falla, conservar el carrito
+                                Toast.makeText(
+                                    context,
+                                    "No se pudo guardar el pedido. " +
+                                            "El carrito se conserva.",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
-
-                            // Crear número de solicitud ficticio
-                            contadorPedidosDemo++
-
-                            numeroPedidoDemo = "DEMO-" +
-                                    contadorPedidosDemo.toString().padStart(4, '0')
-
-                            modalidadPedidoDemo = modalidad
-
-                            // Vaciar el carrito temporal
-                            carrito.clear()
-                            productosCarrito.clear()
-
-                            // Mostrar la confirmación exitosa
-                            pantallaSeleccionada = "PedidoExito"
                         },
 
                         modifier = Modifier.fillMaxSize()
                     )
                 }
 
+                // PEDIDO REGISTRADO EXITOSAMENTE
                 "PedidoExito" -> {
 
                     Column(
@@ -434,7 +537,7 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Text("Estado: Pendiente de Validación")
+                        Text("Estado: Pendiente")
 
                         Text("Modalidad: $modalidadPedidoDemo")
 
@@ -442,7 +545,9 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        Text("Este pedido es una demostración académica.")
+                        Text(
+                            "Pedido guardado localmente en este dispositivo."
+                        )
 
                         Spacer(modifier = Modifier.height(24.dp))
 
@@ -456,14 +561,14 @@ fun DashboardScreen(
                     }
                 }
 
-
-
-
+                // OTRAS PANTALLAS PENDIENTES
                 else -> {
+
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
+
                         Text(
                             text = "Pantalla: $pantallaSeleccionada",
                             style = MaterialTheme.typography.headlineSmall
@@ -473,15 +578,18 @@ fun DashboardScreen(
             }
         }
 
-        // Barra de navegación inferior
+        // BARRA DE NAVEGACIÓN INFERIOR
         NavigationBar {
 
             opciones.forEach { (nombre, icono) ->
 
                 NavigationBarItem(
-                    selected = pantallaSeleccionada == nombre ||
-                            (nombre == "Inicio" &&
-                                    pantallaSeleccionada == "Catalogo"),
+                    selected =
+                        pantallaSeleccionada == nombre ||
+                                (
+                                        nombre == "Inicio" &&
+                                                pantallaSeleccionada == "Catalogo"
+                                        ),
 
                     onClick = {
                         pantallaSeleccionada = nombre
@@ -501,6 +609,7 @@ fun DashboardScreen(
 }
 
 
+// DASHBOARD PRINCIPAL
 @Composable
 fun InicioDashboard(
     rol: String,
@@ -512,7 +621,6 @@ fun InicioDashboard(
     productosAgotados: Int,
     onVerAlertasStock: () -> Unit
 ) {
-
 
     Column(
         modifier = Modifier
@@ -539,7 +647,6 @@ fun InicioDashboard(
                 "Revisa las solicitudes de compra."
             )
 
-
             val totalAlertas =
                 productosStockBajo + productosAgotados
 
@@ -547,8 +654,11 @@ fun InicioDashboard(
                 titulo = "Productos por reponer ($totalAlertas)",
 
                 descripcion = if (totalAlertas == 0) {
+
                     "Sin alertas de stock."
+
                 } else {
+
                     "$productosStockBajo con stock bajo " +
                             "y $productosAgotados agotados. " +
                             "Pulsa para consultar."
@@ -557,14 +667,11 @@ fun InicioDashboard(
                 onClick = onVerAlertasStock
             )
 
-
             TarjetaDashboard(
-                "Gestionar productos",
-                "Agregar y editar productos.",
+                titulo = "Gestionar productos",
+                descripcion = "Agregar y editar productos.",
                 onClick = onGestionProductos
-
             )
-
 
             TarjetaDashboard(
                 titulo = "Inventario",
@@ -572,10 +679,8 @@ fun InicioDashboard(
                 onClick = onGestionInventario
             )
 
-
         } else {
 
-            // ESTA TARJETA AHORA ABRE EL CATALOGO
             TarjetaDashboard(
                 titulo = "Productos destacados",
                 descripcion = "Descubre nuestros productos naturales.",
@@ -597,11 +702,12 @@ fun InicioDashboard(
                 "Mis pedidos",
                 "Revisa tus compras."
             )
-
         }
     }
 }
 
+
+// COMPONENTE REUTILIZABLE PARA TARJETAS
 @Composable
 fun TarjetaDashboard(
     titulo: String,
@@ -611,10 +717,15 @@ fun TarjetaDashboard(
 
     ElevatedCard(
         modifier = if (onClick != null) {
+
             Modifier
                 .fillMaxWidth()
-                .clickable { onClick() }
+                .clickable {
+                    onClick()
+                }
+
         } else {
+
             Modifier.fillMaxWidth()
         }
     ) {
