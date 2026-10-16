@@ -39,6 +39,11 @@ fun DashboardScreen(
         mutableStateOf("Inicio")
     }
 
+// Producto que llega desde el escáner QR
+    var idProductoDesdeQR by rememberSaveable {
+        mutableStateOf<Int?>(null)
+    }
+
     var productoSeleccionado by remember {
         mutableStateOf<ProductoCatalogo?>(null)
     }
@@ -104,6 +109,7 @@ fun DashboardScreen(
                         },
 
                         onGestionInventario = {
+                            idProductoDesdeQR = null
                             pantallaSeleccionada = "GestionInventario"
                         }
                     )
@@ -116,11 +122,39 @@ fun DashboardScreen(
                     )
                 }
 
+
+
                 "QR" -> {
+
+                    // Consultar estados reales de Room
+                    val estadosProductos = productosRoom.associate {
+                        it.id to it.activo
+                    }
+
                     QRScreen(
+                        productos = productosCatalogo,
+
+                        estadosProductos = estadosProductos,
+
+                        rol = rol,
+
+                        onVerProducto = { producto ->
+                            productoSeleccionado = producto
+                            pantallaSeleccionada = "Detalle"
+                        },
+
+
+                        onAbrirInventario = { idProducto ->
+                            idProductoDesdeQR = idProducto
+                            pantallaSeleccionada = "GestionInventario"
+                        },
+
+
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+
+
 
 
 
@@ -195,6 +229,8 @@ fun DashboardScreen(
                             productos = productosCatalogo,
 
                             estadosProductos = estadosProductos,
+
+                            productoInicialId = idProductoDesdeQR,
 
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"

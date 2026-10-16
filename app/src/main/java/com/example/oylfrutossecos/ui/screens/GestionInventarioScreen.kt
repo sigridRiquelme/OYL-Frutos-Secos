@@ -30,7 +30,8 @@ fun GestionInventarioScreen(
         (String?) -> Unit
     ) -> Unit,
 
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    productoInicialId: Int? = null
 ) {
 
     val limiteStockBajo = 10
@@ -64,6 +65,29 @@ fun GestionInventarioScreen(
     var procesando by remember {
         mutableStateOf(false)
     }
+
+// Abrir automáticamente el ajuste del producto
+// que llegó desde el escáner QR
+    LaunchedEffect(productoInicialId) {
+
+        if (productoInicialId != null) {
+
+            val productoEncontrado = productos.firstOrNull {
+                it.id == productoInicialId
+            }
+
+            if (productoEncontrado != null) {
+
+                productoEnAjuste = productoEncontrado
+
+                // Reiniciar formulario de ajuste
+                cantidadAjuste = ""
+                esEntrada = true
+                errorAjuste = null
+            }
+        }
+    }
+
 
     // Contadores del inventario
     val productosStockBajo = productos.count {
