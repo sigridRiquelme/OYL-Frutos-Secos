@@ -44,6 +44,10 @@ fun DashboardScreen(
         mutableStateOf<Int?>(null)
     }
 
+    var filtroInventarioInicial by rememberSaveable {
+        mutableStateOf("Todos")
+    }
+
     var productoSeleccionado by remember {
         mutableStateOf<ProductoCatalogo?>(null)
     }
@@ -96,6 +100,20 @@ fun DashboardScreen(
                     InicioDashboard(
                         rol = rol,
 
+                        productosStockBajo = productosRoom.count {
+                            it.activo && it.stock in 1..10
+                        },
+
+                        productosAgotados = productosRoom.count {
+                            it.activo && it.stock == 0
+                        },
+
+                        onVerAlertasStock = {
+                            idProductoDesdeQR = null
+                            filtroInventarioInicial = "Por reponer"
+                            pantallaSeleccionada = "GestionInventario"
+                        },
+
                         onAbrirCatalogo = {
                             pantallaSeleccionada = "Catalogo"
                         },
@@ -110,8 +128,10 @@ fun DashboardScreen(
 
                         onGestionInventario = {
                             idProductoDesdeQR = null
+                            filtroInventarioInicial = "Todos"
                             pantallaSeleccionada = "GestionInventario"
                         }
+
                     )
 
                 }
@@ -143,12 +163,11 @@ fun DashboardScreen(
                             pantallaSeleccionada = "Detalle"
                         },
 
-
                         onAbrirInventario = { idProducto ->
                             idProductoDesdeQR = idProducto
+                            filtroInventarioInicial = "Todos"
                             pantallaSeleccionada = "GestionInventario"
                         },
-
 
                         modifier = Modifier.fillMaxSize()
                     )
@@ -231,6 +250,8 @@ fun DashboardScreen(
                             estadosProductos = estadosProductos,
 
                             productoInicialId = idProductoDesdeQR,
+
+                            filtroInicial = filtroInventarioInicial,
 
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"
@@ -486,7 +507,10 @@ fun InicioDashboard(
     onAbrirCatalogo: () -> Unit,
     onAbrirCarrito: () -> Unit,
     onGestionProductos: () -> Unit,
-    onGestionInventario: () -> Unit
+    onGestionInventario: () -> Unit,
+    productosStockBajo: Int,
+    productosAgotados: Int,
+    onVerAlertasStock: () -> Unit
 ) {
 
 
@@ -515,10 +539,24 @@ fun InicioDashboard(
                 "Revisa las solicitudes de compra."
             )
 
+
+            val totalAlertas =
+                productosStockBajo + productosAgotados
+
             TarjetaDashboard(
-                "Stock bajo",
-                "Productos que necesitan reposición."
+                titulo = "Productos por reponer ($totalAlertas)",
+
+                descripcion = if (totalAlertas == 0) {
+                    "Sin alertas de stock."
+                } else {
+                    "$productosStockBajo con stock bajo " +
+                            "y $productosAgotados agotados. " +
+                            "Pulsa para consultar."
+                },
+
+                onClick = onVerAlertasStock
             )
+
 
             TarjetaDashboard(
                 "Gestionar productos",

@@ -1,4 +1,3 @@
-
 package com.example.oylfrutossecos.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
@@ -31,7 +30,8 @@ fun GestionInventarioScreen(
     ) -> Unit,
 
     modifier: Modifier = Modifier,
-    productoInicialId: Int? = null
+    productoInicialId: Int? = null,
+    filtroInicial: String = "Todos"
 ) {
 
     val limiteStockBajo = 10
@@ -40,8 +40,8 @@ fun GestionInventarioScreen(
         mutableStateOf("")
     }
 
-    var filtroSeleccionado by rememberSaveable {
-        mutableStateOf("Todos")
+    var filtroSeleccionado by rememberSaveable(filtroInicial) {
+        mutableStateOf(filtroInicial)
     }
 
     // NUEVO: Producto seleccionado para ajustar
@@ -117,6 +117,11 @@ fun GestionInventarioScreen(
         val activo = estadosProductos[producto.id] ?: true
 
         val coincideFiltro = when (filtroSeleccionado) {
+
+            "Por reponer" ->
+                activo &&
+                        producto.stock in 0..limiteStockBajo
+
 
             "Stock bajo" ->
                 activo &&
@@ -373,11 +378,15 @@ fun GestionInventarioScreen(
                 Arrangement.spacedBy(8.dp)
         ) {
 
+
             listOf(
                 "Todos",
+                "Por reponer",
                 "Stock bajo",
                 "Agotados"
-            ).forEach { filtro ->
+            )
+
+            .forEach { filtro ->
 
                 FilterChip(
                     selected = filtroSeleccionado == filtro,
