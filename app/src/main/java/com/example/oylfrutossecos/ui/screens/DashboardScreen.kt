@@ -121,6 +121,17 @@ fun DashboardScreen(
                     InicioDashboard(
                         rol = rol,
 
+                        totalAvisos = pedidosGuardados.count {
+                            it.estado == "Pendiente"
+                        } + productosRoom.count {
+                            it.activo && it.stock in 0..10
+                        },
+
+                        onAbrirNotificaciones = {
+                            pantallaSeleccionada = "Notificaciones"
+                        },
+
+
                         pedidosPendientes = pedidosGuardados.count {
                             it.estado == "Pendiente"
                         },
@@ -294,6 +305,44 @@ fun DashboardScreen(
                         )
                     }
                 }
+
+                // PANTALLA 14: NOTIFICACIONES
+                "Notificaciones" -> {
+
+                    if (rol == "Administrador") {
+
+                        val estadosProductos = productosRoom.associate {
+                            it.id to it.activo
+                        }
+
+                        NotificacionesScreen(
+                            productos = productosCatalogo,
+                            estadosProductos = estadosProductos,
+                            pedidos = pedidosGuardados,
+
+                            onVolver = {
+                                pantallaSeleccionada = "Inicio"
+                            },
+
+                            onAbrirInventario = { filtro ->
+
+                                idProductoDesdeQR = null
+                                filtroInventarioInicial = filtro
+
+                                pantallaSeleccionada = "GestionInventario"
+                            },
+
+                            onAbrirPedidos = {
+
+                                filtroPedidosInicial = "Pendiente"
+                                pantallaSeleccionada = "Pedidos"
+                            },
+
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
 
                 // GESTIÓN DE PEDIDOS
                 "Pedidos" -> {
@@ -645,8 +694,11 @@ fun InicioDashboard(
     productosAgotados: Int,
     onVerAlertasStock: () -> Unit,
     pedidosPendientes: Int,
-    onVerPedidosPendientes: () -> Unit
+    onVerPedidosPendientes: () -> Unit,
+    totalAvisos: Int,
+    onAbrirNotificaciones: () -> Unit
 ) {
+
 
 
     Column(
@@ -669,6 +721,18 @@ fun InicioDashboard(
 
         if (rol == "Administrador") {
 
+            TarjetaDashboard(
+                titulo = "Notificaciones ($totalAvisos)",
+
+                descripcion = if (totalAvisos == 0) {
+                    "No tienes notificaciones activas."
+                } else {
+                    "Tienes $totalAvisos avisos de pedidos " +
+                            "e inventario. Pulsa para revisarlos."
+                },
+
+                onClick = onAbrirNotificaciones
+            )
 
             TarjetaDashboard(
                 titulo = "Pedidos pendientes ($pedidosPendientes)",
@@ -686,6 +750,9 @@ fun InicioDashboard(
 
             val totalAlertas =
                 productosStockBajo + productosAgotados
+
+
+
 
             TarjetaDashboard(
                 titulo = "Productos por reponer ($totalAlertas)",
