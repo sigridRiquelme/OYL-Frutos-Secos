@@ -20,6 +20,8 @@ import com.example.oylfrutossecos.data.local.PedidoLocalStore
 import com.example.oylfrutossecos.data.local.PedidoLocal
 import com.example.oylfrutossecos.data.local.DetallePedidoLocal
 
+import com.example.oylfrutossecos.ui.validation.ValidadorCarrito
+
 @Composable
 fun DashboardScreen(
     rol: String,
@@ -89,6 +91,39 @@ fun DashboardScreen(
 
     val productosCarrito = remember {
         mutableStateMapOf<Int, ProductoCatalogo>()
+    }
+
+    // Validar el carrito con los datos actuales de Room
+    fun validarYActualizarCarrito(): String? {
+
+        val error = ValidadorCarrito.validar(
+            cantidades = carrito.toMap(),
+
+            preciosCarrito = productosCarrito.mapValues { (_, producto) ->
+                producto.precio
+            },
+
+            productosActuales = productosRoom
+        )
+
+        // Si algo cambió, actualizar la información visual
+        // del carrito para que el Cliente pueda corregirlo.
+        if (error != null) {
+
+            val productosActuales = productosCatalogo.associateBy {
+                it.id
+            }
+
+            carrito.keys.toList().forEach { id ->
+
+                productosActuales[id]?.let { productoActual ->
+
+                    productosCarrito[id] = productoActual
+                }
+            }
+        }
+
+        return error
     }
 
     // Información para la pantalla de pedido exitoso
@@ -528,33 +563,70 @@ fun DashboardScreen(
                     CarritoScreen(
                         productos = productosCarrito.values.toList(),
 
+                        productosActuales = productosCatalogo,
+
                         cantidades = carrito,
+
 
                         onCambiarCantidad = { id, nuevaCantidad ->
 
-                            val producto = productosCarrito[id]
+                            val productoActual = productosCatalogo.firstOrNull {
+                                it.id == id
+                            }
+
+                            val cantidadAnterior = carrito[id] ?: 0
 
                             if (nuevaCantidad <= 0) {
 
+                                // Eliminar del carrito
                                 carrito.remove(id)
                                 productosCarrito.remove(id)
 
                             } else if (
-                                producto != null &&
-                                nuevaCantidad <= producto.stock
+                                productoActual != null &&
+                                productoActual.activo &&
+                                (
+                                        nuevaCantidad < cantidadAnterior ||
+                                                nuevaCantidad <= productoActual.stock
+                                        )
                             ) {
 
+                                // Permitir reducir la cantidad aunque
+                                // todavía supere el stock actualizado.
+                                // Para aumentar, respetar el stock real.
                                 carrito[id] = nuevaCantidad
+
+                                // Actualizar la copia del producto
+                                productosCarrito[id] = productoActual
                             }
                         },
+
 
                         onVolverCatalogo = {
                             pantallaSeleccionada = "Catalogo"
                         },
 
+
                         onConfirmarPedido = {
-                            pantallaSeleccionada = "Confirmacion"
+
+                            val error = validarYActualizarCarrito()
+
+                            if (error == null) {
+
+                                // Todos los productos siguen disponibles
+                                pantallaSeleccionada = "Confirmacion"
+
+                            } else {
+
+                                // Mostrar el problema sin perder el carrito
+                                Toast.makeText(
+                                    context,
+                                    error,
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         },
+
 
                         modifier = Modifier.fillMaxSize()
                     )
@@ -572,72 +644,95 @@ fun DashboardScreen(
                             pantallaSeleccionada = "Carrito"
                         },
 
+
                         onConfirmar = {
                                 nombre,
                                 telefono,
                                 modalidad,
                                 direccion ->
 
-                            try {
+                            // Verificar nuevamente el carrito
+                            // justo antes de registrar la solicitud
+                            val errorValidacion = validarYActualizarCarrito()
 
-                                // Preparar los productos de la compra
-                                val detallesPedido =
-                                    productosCarrito.values.mapNotNull { producto ->
+                            if (errorValidacion != null) {
 
-                                        val cantidad =
-                                            carrito[producto.id] ?: 0
-
-                                        if (cantidad > 0) {
-
-                                            DetallePedidoLocal(
-                                                idProducto = producto.id,
-                                                nombre = producto.nombre,
-                                                cantidad = cantidad,
-                                                precioUnitario = producto.precio
-                                            )
-
-                                        } else {
-
-                                            null
-                                        }
-                                    }
-
-                                // Guardar realmente el pedido
-                                val pedido = PedidoLocalStore.registrarPedido(
-                                    context = context,
-                                    nombreCliente = nombre,
-                                    telefono = telefono,
-                                    modalidad = modalidad,
-                                    direccion = direccion,
-                                    productos = detallesPedido
-                                )
-
-                                // Actualizar historial de pedidos
-                                pedidosGuardados = pedidosGuardados + pedido
-
-                                // Guardar datos para pantalla de éxito
-                                numeroPedidoDemo = pedido.numero
-                                totalPedidoDemo = pedido.total
-                                modalidadPedidoDemo = pedido.modalidad
-
-                                // Vaciar carrito SOLO después de guardar
-                                carrito.clear()
-                                productosCarrito.clear()
-
-                                // Mostrar confirmación exitosa
-                                pantallaSeleccionada = "PedidoExito"
-
-                            } catch (error: Exception) {
-
-                                // Si falla, conservar el carrito
+                                // Avisar al Cliente qué cambió
                                 Toast.makeText(
                                     context,
-                                    "No se pudo guardar el pedido. " +
-                                            "El carrito se conserva.",
+                                    errorValidacion,
                                     Toast.LENGTH_LONG
                                 ).show()
+
+                                // Regresar al carrito para corregirlo
+                                // sin eliminar sus productos
+                                pantallaSeleccionada = "Carrito"
+
+                            } else {
+
+                                // Solo registrar si la validación fue exitosa
+                                try {
+
+                                    // Preparar los productos de la compra
+                                    val detallesPedido =
+                                        productosCarrito.values.mapNotNull { producto ->
+
+                                            val cantidad =
+                                                carrito[producto.id] ?: 0
+
+                                            if (cantidad > 0) {
+
+                                                DetallePedidoLocal(
+                                                    idProducto = producto.id,
+                                                    nombre = producto.nombre,
+                                                    cantidad = cantidad,
+                                                    precioUnitario = producto.precio
+                                                )
+
+                                            } else {
+
+                                                null
+                                            }
+                                        }
+
+                                    // Guardar el pedido localmente
+                                    val pedido = PedidoLocalStore.registrarPedido(
+                                        context = context,
+                                        nombreCliente = nombre,
+                                        telefono = telefono,
+                                        modalidad = modalidad,
+                                        direccion = direccion,
+                                        productos = detallesPedido
+                                    )
+
+                                    // Actualizar historial
+                                    pedidosGuardados = pedidosGuardados + pedido
+
+                                    // Preparar la pantalla de éxito
+                                    numeroPedidoDemo = pedido.numero
+                                    totalPedidoDemo = pedido.total
+                                    modalidadPedidoDemo = pedido.modalidad
+
+                                    // Vaciar carrito únicamente después de guardar
+                                    carrito.clear()
+                                    productosCarrito.clear()
+
+                                    // Mostrar confirmación animada
+                                    pantallaSeleccionada = "PedidoExito"
+
+                                } catch (error: Exception) {
+
+                                    // Si falla el guardado, conservar el carrito
+                                    Toast.makeText(
+                                        context,
+                                        "No se pudo guardar el pedido. " +
+                                                "El carrito se conserva.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         },
+
 
                         modifier = Modifier.fillMaxSize()
                     )
