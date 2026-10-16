@@ -11,13 +11,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModel
+import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
+
 
 @Composable
 fun DashboardScreen(
     rol: String,
     modifier: Modifier = Modifier,
-    productoViewModel: ProductoViewModel
+    productoViewModel: ProductoViewModel,
+    clienteViewModel: ClienteViewModel,
+    clienteId: Int?
 ) {
+
+// Recuperar los datos del cliente desde Room
+    LaunchedEffect(clienteId) {
+        if (rol == "Cliente" && clienteId != null) {
+            clienteViewModel.cargarCliente(clienteId)
+        }
+    }
+
+// Observar los datos recuperados
+    val clienteActual by clienteViewModel.clienteActual.collectAsState()
+
+
 
     // Productos observados desde Room mediante MVVM
     val productosRoom by productoViewModel.productos.collectAsState()
@@ -99,6 +115,25 @@ fun DashboardScreen(
                         }
                     )
                 }
+
+
+                "Perfil" -> {
+                    if (rol == "Cliente") {
+                        PerfilScreen(
+                            cliente = clienteActual,
+                            clienteViewModel = clienteViewModel,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Perfil del administrador: pendiente")
+                        }
+                    }
+                }
+
 
                 "Mapa" -> {
                     MapaScreen(

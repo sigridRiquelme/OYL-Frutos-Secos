@@ -39,4 +39,25 @@ class ClienteRepository(
             nombreUsuario
         ) > 0
     }
+
+
+    suspend fun actualizarDatosCliente(
+        clienteId: Int,
+        nombre: String,
+        correo: String,
+        telefono: String,
+        direccion: String
+    ): Boolean {
+
+        val filasActualizadas = clienteDao.actualizarDatosCliente(
+            clienteId = clienteId,
+            nombre = nombre,
+            correo = correo,
+            telefono = telefono,
+            direccion = direccion
+        )
+
+        return filasActualizadas == 1
+    }
+
 }

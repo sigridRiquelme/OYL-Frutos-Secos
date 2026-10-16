@@ -156,15 +156,20 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+
                         "dashboard" -> {
                             DashboardScreen(
                                 rol = rolActual,
                                 modifier = Modifier.padding(innerPadding),
 
-                                // NUEVO: ENVIAMOS EL VIEWMODEL
-                                productoViewModel = productoViewModel
+                                productoViewModel = productoViewModel,
+
+                                // Datos del cliente que inició sesión
+                                clienteViewModel = clienteViewModel,
+                                clienteId = clienteIdActual
                             )
                         }
+
                     }
                 }
             }

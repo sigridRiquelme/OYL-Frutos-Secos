@@ -30,6 +30,15 @@ sealed interface EstadoLogin {
     data class Exito(val clienteId: Int) : EstadoLogin
     data class Error(val mensaje: String) : EstadoLogin
 }
+
+
+sealed interface EstadoEdicionPerfil {
+    data object Inicial : EstadoEdicionPerfil
+    data object Guardando : EstadoEdicionPerfil
+    data object Exito : EstadoEdicionPerfil
+    data class Error(val mensaje: String) : EstadoEdicionPerfil
+}
+
 class ClienteViewModel(
     private val repository: ClienteRepository
 ) : ViewModel() {
@@ -46,6 +55,23 @@ class ClienteViewModel(
 
     val estadoLogin: StateFlow<EstadoLogin> =
         _estadoLogin
+
+    // Cliente que inició sesión
+    private val _clienteActual =
+        MutableStateFlow<ClienteEntity?>(null)
+
+    val clienteActual: StateFlow<ClienteEntity?> =
+        _clienteActual
+
+
+    private val _estadoEdicionPerfil =
+        MutableStateFlow<EstadoEdicionPerfil>(
+            EstadoEdicionPerfil.Inicial
+        )
+
+    val estadoEdicionPerfil: StateFlow<EstadoEdicionPerfil> =
+        _estadoEdicionPerfil
+
     fun registrarCliente(
         nombre: String,
         nombreUsuario: String,
@@ -213,6 +239,92 @@ class ClienteViewModel(
     fun limpiarEstadoLogin() {
         _estadoLogin.value = EstadoLogin.Inicial
     }
+
+
+    fun cargarCliente(clienteId: Int) {
+        viewModelScope.launch {
+            try {
+                val cliente = withContext(Dispatchers.IO) {
+                    repository.buscarPorId(clienteId)
+                }
+
+                _clienteActual.value = cliente
+
+            } catch (e: Exception) {
+                _clienteActual.value = null
+            }
+        }
+    }
+
+
+    fun actualizarPerfil(
+        nombre: String,
+        correo: String,
+        telefono: String,
+        direccion: String
+    ) {
+        if (_estadoEdicionPerfil.value == EstadoEdicionPerfil.Guardando) {
+            return
+        }
+
+        viewModelScope.launch {
+            _estadoEdicionPerfil.value = EstadoEdicionPerfil.Guardando
+
+            val cliente = _clienteActual.value
+
+            if (cliente == null) {
+                _estadoEdicionPerfil.value = EstadoEdicionPerfil.Error(
+                    "No se encontró el cliente"
+                )
+                return@launch
+            }
+
+            if (nombre.trim().length < 3 ||
+                !android.util.Patterns.EMAIL_ADDRESS
+                    .matcher(correo.trim()).matches() ||
+                telefono.count { it.isDigit() } < 9
+            ) {
+                _estadoEdicionPerfil.value = EstadoEdicionPerfil.Error(
+                    "Revisa el nombre, correo y teléfono"
+                )
+                return@launch
+            }
+
+            try {
+                val actualizado = withContext(Dispatchers.IO) {
+                    repository.actualizarDatosCliente(
+                        clienteId = cliente.id,
+                        nombre = nombre.trim(),
+                        correo = correo.trim(),
+                        telefono = telefono.trim(),
+                        direccion = direccion.trim()
+                    )
+                }
+
+                if (actualizado) {
+                    // Recuperar desde Room los datos actualizados
+                    cargarCliente(cliente.id)
+
+                    _estadoEdicionPerfil.value = EstadoEdicionPerfil.Exito
+                } else {
+                    _estadoEdicionPerfil.value = EstadoEdicionPerfil.Error(
+                        "No se pudieron guardar los cambios"
+                    )
+                }
+
+            } catch (e: Exception) {
+                _estadoEdicionPerfil.value = EstadoEdicionPerfil.Error(
+                    "Ocurrió un error al actualizar el perfil"
+                )
+            }
+        }
+    }
+
+    fun limpiarEstadoEdicionPerfil() {
+        _estadoEdicionPerfil.value = EstadoEdicionPerfil.Inicial
+    }
+
+
 
 }
 

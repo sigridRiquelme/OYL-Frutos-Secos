@@ -44,4 +44,22 @@ interface ClienteDao {
     suspend fun existeNombreUsuario(
         nombreUsuario: String
     ): Int
+
+
+    @Query("""
+    UPDATE clientes
+    SET nombre = :nombre,
+        correo = :correo,
+        telefono = :telefono,
+        direccion = :direccion
+    WHERE id = :clienteId
+""")
+    suspend fun actualizarDatosCliente(
+        clienteId: Int,
+        nombre: String,
+        correo: String,
+        telefono: String,
+        direccion: String
+    ): Int
+
 }
