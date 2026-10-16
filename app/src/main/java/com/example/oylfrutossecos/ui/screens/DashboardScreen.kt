@@ -66,6 +66,10 @@ fun DashboardScreen(
         mutableStateOf("Todos")
     }
 
+    var filtroPedidosInicial by rememberSaveable {
+        mutableStateOf("Todos")
+    }
+
     var productoSeleccionado by remember {
         mutableStateOf<ProductoCatalogo?>(null)
     }
@@ -116,6 +120,16 @@ fun DashboardScreen(
 
                     InicioDashboard(
                         rol = rol,
+
+                        pedidosPendientes = pedidosGuardados.count {
+                            it.estado == "Pendiente"
+                        },
+
+                        onVerPedidosPendientes = {
+                            filtroPedidosInicial = "Pendiente"
+                            pantallaSeleccionada = "Pedidos"
+                        },
+
 
                         productosStockBajo = productosRoom.count {
                             it.activo && it.stock in 1..10
@@ -288,6 +302,8 @@ fun DashboardScreen(
 
                         GestionPedidosScreen(
                             pedidos = pedidosGuardados,
+
+                            filtroInicial = filtroPedidosInicial,
 
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"
@@ -591,9 +607,16 @@ fun DashboardScreen(
                                                 pantallaSeleccionada == "Catalogo"
                                         ),
 
+
                     onClick = {
+
+                        if (nombre == "Pedidos") {
+                            filtroPedidosInicial = "Todos"
+                        }
+
                         pantallaSeleccionada = nombre
                     },
+
 
                     icon = {
                         Text(icono)
@@ -610,6 +633,7 @@ fun DashboardScreen(
 
 
 // DASHBOARD PRINCIPAL
+
 @Composable
 fun InicioDashboard(
     rol: String,
@@ -619,8 +643,11 @@ fun InicioDashboard(
     onGestionInventario: () -> Unit,
     productosStockBajo: Int,
     productosAgotados: Int,
-    onVerAlertasStock: () -> Unit
+    onVerAlertasStock: () -> Unit,
+    pedidosPendientes: Int,
+    onVerPedidosPendientes: () -> Unit
 ) {
+
 
     Column(
         modifier = Modifier
@@ -642,10 +669,20 @@ fun InicioDashboard(
 
         if (rol == "Administrador") {
 
+
             TarjetaDashboard(
-                "Pedidos pendientes",
-                "Revisa las solicitudes de compra."
+                titulo = "Pedidos pendientes ($pedidosPendientes)",
+
+                descripcion = if (pedidosPendientes == 0) {
+                    "No tienes pedidos pendientes."
+                } else {
+                    "Tienes $pedidosPendientes pedidos esperando atención. " +
+                            "Pulsa para revisarlos."
+                },
+
+                onClick = onVerPedidosPendientes
             )
+
 
             val totalAlertas =
                 productosStockBajo + productosAgotados

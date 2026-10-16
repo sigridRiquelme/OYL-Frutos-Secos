@@ -69,16 +69,19 @@ fun GestionPedidosScreen(
         String,
         (String?) -> Unit
     ) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    filtroInicial: String = "Todos"
 ) {
+
 
     var busqueda by rememberSaveable {
         mutableStateOf("")
     }
 
-    var filtroSeleccionado by rememberSaveable {
-        mutableStateOf("Todos")
+    var filtroSeleccionado by rememberSaveable(filtroInicial) {
+        mutableStateOf(filtroInicial)
     }
+
 
     var numeroPedidoSeleccionado by rememberSaveable {
         mutableStateOf<String?>(null)
