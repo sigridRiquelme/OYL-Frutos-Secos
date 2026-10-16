@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -19,40 +21,65 @@ import com.example.oylfrutossecos.ui.validation.ValidadorProducto
 @Composable
 fun FormularioProductoScreen(
     onVolver: () -> Unit,
-    onGuardar: (DatosNuevoProducto, (Boolean) -> Unit) -> Unit,
+    onGuardar: (
+        DatosNuevoProducto,
+        (Boolean) -> Unit
+    ) -> Unit,
     modifier: Modifier = Modifier,
-    producto: ProductoCatalogo? = null
+    producto: ProductoCatalogo? = null,
+
+    // NUEVO: Fotografía existente al editar
+    imagenUriInicial: String? = null
 ) {
 
-    // Si recibimos un producto, estamos editando.
-    // Si es null, estamos creando uno nuevo.
     val esEdicion = producto != null
 
-    // Datos iniciales del formulario
+    // Nombre
     var nombre by rememberSaveable(producto?.id) {
         mutableStateOf(producto?.nombre.orEmpty())
     }
 
+    // Categoría
     var categoria by rememberSaveable(producto?.id) {
-        mutableStateOf(producto?.categoria ?: "Frutos secos")
+        mutableStateOf(
+            producto?.categoria ?: "Frutos secos"
+        )
     }
 
+    // Precio
     var precio by rememberSaveable(producto?.id) {
-        mutableStateOf(producto?.precio?.toString().orEmpty())
+        mutableStateOf(
+            producto?.precio?.toString().orEmpty()
+        )
     }
 
+    // Stock
     var stock by rememberSaveable(producto?.id) {
-        mutableStateOf(producto?.stock?.toString().orEmpty())
+        mutableStateOf(
+            producto?.stock?.toString().orEmpty()
+        )
     }
 
+    // Descripción
     var descripcion by rememberSaveable(producto?.id) {
-        mutableStateOf(producto?.descripcion.orEmpty())
+        mutableStateOf(
+            producto?.descripcion.orEmpty()
+        )
     }
 
+    // Presentación
     var presentacion by rememberSaveable(producto?.id) {
-        mutableStateOf(producto?.presentacion.orEmpty())
+        mutableStateOf(
+            producto?.presentacion.orEmpty()
+        )
     }
 
+    // NUEVO: Fotografía del producto
+    var imagenUri by rememberSaveable(producto?.id) {
+        mutableStateOf(imagenUriInicial)
+    }
+
+    // Errores de validación
     var errores by remember(producto?.id) {
         mutableStateOf<Map<String, String>>(emptyMap())
     }
@@ -70,15 +97,18 @@ fun FormularioProductoScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
+
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
         // Volver al listado
-        TextButton(onClick = onVolver) {
+        TextButton(
+            onClick = onVolver
+        ) {
             Text("← Volver a productos")
         }
 
-        // Título dinámico
+        // Título
         Text(
             text = if (esEdicion) {
                 "Editar producto"
@@ -107,7 +137,9 @@ fun FormularioProductoScreen(
             modifier = Modifier.horizontalScroll(
                 rememberScrollState()
             ),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp)
         ) {
 
             listOf(
@@ -118,8 +150,12 @@ fun FormularioProductoScreen(
 
                 FilterChip(
                     selected = categoria == opcion,
-                    onClick = { categoria = opcion },
-                    label = { Text(opcion) }
+                    onClick = {
+                        categoria = opcion
+                    },
+                    label = {
+                        Text(opcion)
+                    }
                 )
             }
         }
@@ -158,15 +194,31 @@ fun FormularioProductoScreen(
             error = errores["presentacion"]
         )
 
-        // Mostrar errores del guardado
+        HorizontalDivider()
+
+        // NUEVO: Selector de fotografías
+        SelectorImagenProducto(
+            imagenUri = imagenUri,
+
+            onImagenCambiada = { nuevaImagen ->
+                imagenUri = nuevaImagen
+            },
+
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        HorizontalDivider()
+
+        // Mostrar error si falla el guardado
         if (errorGuardado.isNotEmpty()) {
+
             Text(
                 text = errorGuardado,
                 color = MaterialTheme.colorScheme.error
             )
         }
 
-        // Guardar cambios o crear producto
+        // Guardar producto
         Button(
             onClick = {
 
@@ -176,11 +228,15 @@ fun FormularioProductoScreen(
                     precio = precio.trim(),
                     stock = stock.trim(),
                     descripcion = descripcion.trim(),
-                    presentacion = presentacion.trim()
+                    presentacion = presentacion.trim(),
+
+                    // NUEVO: Incluir fotografía
+                    imagenUri = imagenUri
                 )
 
-                // Validaciones independientes de la UI
+                // Validaciones separadas de la UI
                 errores = ValidadorProducto.validar(datos)
+
                 errorGuardado = ""
 
                 if (errores.isEmpty()) {
@@ -192,14 +248,18 @@ fun FormularioProductoScreen(
                         guardando = false
 
                         if (exitoso) {
+
                             onVolver()
+
                         } else {
+
                             errorGuardado =
                                 "No se pudieron guardar los cambios."
                         }
                     }
                 }
             },
+
             enabled = !guardando,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -215,6 +275,7 @@ fun FormularioProductoScreen(
     }
 }
 
+
 // Componente reutilizable para los campos
 @Composable
 private fun CampoProducto(
@@ -228,15 +289,19 @@ private fun CampoProducto(
     OutlinedTextField(
         value = valor,
         onValueChange = onCambio,
-        label = { Text(etiqueta) },
+        label = {
+            Text(etiqueta)
+        },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         isError = error != null,
+
         supportingText = {
             if (error != null) {
                 Text(error)
             }
         },
+
         keyboardOptions = KeyboardOptions(
             keyboardType = tipo
         )

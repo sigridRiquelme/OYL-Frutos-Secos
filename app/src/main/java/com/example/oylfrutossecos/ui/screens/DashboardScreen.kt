@@ -119,13 +119,19 @@ fun DashboardScreen(
 
 
 
+
                 "GestionProductos" -> {
 
                     if (rol == "Administrador") {
 
-                        // Leer estados reales desde Room
+                        // Estados recuperados desde Room
                         val estadosProductos = productosRoom.associate {
                             it.id to it.activo
+                        }
+
+                        // NUEVO: Fotografías recuperadas desde Room
+                        val imagenesProductos = productosRoom.associate {
+                            it.id to it.imagenUri
                         }
 
                         GestionProductosScreen(
@@ -133,12 +139,14 @@ fun DashboardScreen(
 
                             estadosProductos = estadosProductos,
 
+                            // NUEVO: Entregar fotografías
+                            imagenesProductos = imagenesProductos,
+
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"
                             },
 
                             onCrearProducto = { datos, onResultado ->
-
                                 productoViewModel.crearProducto(
                                     datos,
                                     onResultado
@@ -146,7 +154,6 @@ fun DashboardScreen(
                             },
 
                             onEditarProducto = { id, datos, onResultado ->
-
                                 productoViewModel.editarProducto(
                                     id,
                                     datos,
@@ -154,9 +161,7 @@ fun DashboardScreen(
                                 )
                             },
 
-                            // NUEVO: Conectar cambio de estado
                             onCambiarEstado = { id, activo, onResultado ->
-
                                 productoViewModel.cambiarEstadoProducto(
                                     id,
                                     activo,
@@ -168,6 +173,7 @@ fun DashboardScreen(
                         )
                     }
                 }
+
 
 
                 // NUEVA PANTALLA: CATALOGO

@@ -7,7 +7,10 @@ data class DatosNuevoProducto(
     val precio: String,
     val stock: String,
     val descripcion: String,
-    val presentacion: String
+    val presentacion: String,
+
+    // NUEVO: Dirección de la fotografía
+    val imagenUri: String? = null
 )
 
 object ValidadorProducto {
@@ -55,4 +58,3 @@ object ValidadorProducto {
         return errores
     }
 }
-

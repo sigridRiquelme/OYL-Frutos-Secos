@@ -15,33 +15,42 @@ class ProductoRepository(
         productoDao.obtenerProductos()
 
     // Obtener producto por ID
-    suspend fun obtenerProductoPorId(id: Int): ProductoEntity? {
+    suspend fun obtenerProductoPorId(
+        id: Int
+    ): ProductoEntity? {
         return productoDao.obtenerProductoPorId(id)
     }
 
     // Guardar producto
-    suspend fun guardarProducto(producto: ProductoEntity) {
+    suspend fun guardarProducto(
+        producto: ProductoEntity
+    ) {
         productoDao.guardarProducto(producto)
     }
 
     // Actualizar producto
-    suspend fun actualizarProducto(producto: ProductoEntity) {
+    suspend fun actualizarProducto(
+        producto: ProductoEntity
+    ) {
         productoDao.actualizarProducto(producto)
     }
 
     // Eliminar producto
-    suspend fun eliminarProducto(producto: ProductoEntity) {
+    suspend fun eliminarProducto(
+        producto: ProductoEntity
+    ) {
         productoDao.eliminarProducto(producto)
     }
 
-    // Crear producto
+    // Crear un producto con fotografía opcional
     suspend fun crearProducto(
         nombre: String,
         categoria: String,
         precio: Int,
         stock: Int,
         descripcion: String,
-        presentacion: String
+        presentacion: String,
+        imagenUri: String?
     ) {
 
         val nuevoId = productoDao.obtenerSiguienteId()
@@ -54,13 +63,17 @@ class ProductoRepository(
             stock = stock,
             descripcion = descripcion,
             presentacion = presentacion,
+
+            // NUEVO: Guardar dirección de la foto
+            imagenUri = imagenUri,
+
             activo = true
         )
 
         productoDao.insertarProducto(nuevoProducto)
     }
 
-    // Editar producto
+    // Editar un producto existente
     suspend fun editarProducto(
         id: Int,
         nombre: String,
@@ -68,7 +81,8 @@ class ProductoRepository(
         precio: Int,
         stock: Int,
         descripcion: String,
-        presentacion: String
+        presentacion: String,
+        imagenUri: String?
     ) {
 
         val productoActual =
@@ -83,20 +97,28 @@ class ProductoRepository(
             precio = precio,
             stock = stock,
             descripcion = descripcion,
-            presentacion = presentacion
+            presentacion = presentacion,
+
+            // NUEVO: Actualizar fotografía
+            imagenUri = imagenUri
         )
 
-        productoDao.actualizarProducto(productoModificado)
+        productoDao.actualizarProducto(
+            productoModificado
+        )
     }
 
-    // NUEVO: Cambiar estado del producto
+    // Activar o desactivar producto
     suspend fun cambiarEstadoProducto(
         id: Int,
         activo: Boolean
     ) {
 
         val filasModificadas =
-            productoDao.cambiarEstadoProducto(id, activo)
+            productoDao.cambiarEstadoProducto(
+                id,
+                activo
+            )
 
         if (filasModificadas == 0) {
             throw IllegalArgumentException(

@@ -17,6 +17,10 @@ import com.example.oylfrutossecos.ui.validation.DatosNuevoProducto
 fun GestionProductosScreen(
     productos: List<ProductoCatalogo>,
     estadosProductos: Map<Int, Boolean>,
+
+    // NUEVO: Fotografías recuperadas desde Room
+    imagenesProductos: Map<Int, String?>,
+
     onVolver: () -> Unit,
     onCrearProducto: (
         DatosNuevoProducto,
@@ -47,12 +51,10 @@ fun GestionProductosScreen(
         mutableStateOf("")
     }
 
-    // Producto que queremos activar o desactivar
     var productoPorConfirmar by remember {
         mutableStateOf<ProductoCatalogo?>(null)
     }
 
-    // Evitar pulsar botones durante el guardado
     var idProcesando by remember {
         mutableStateOf<Int?>(null)
     }
@@ -61,11 +63,12 @@ fun GestionProductosScreen(
         mutableStateOf("")
     }
 
+    // Producto seleccionado para editar
     val productoEnEdicion = idProductoEditando?.let { id ->
         productos.firstOrNull { it.id == id }
     }
 
-    // Confirmar antes de cambiar el estado
+    // Confirmación para activar o desactivar
     productoPorConfirmar?.let { producto ->
 
         val estaActivo =
@@ -98,7 +101,6 @@ fun GestionProductosScreen(
             confirmButton = {
                 Button(
                     onClick = {
-
                         productoPorConfirmar = null
                         idProcesando = producto.id
                         mensajeError = ""
@@ -140,11 +142,13 @@ fun GestionProductosScreen(
             idProductoEditando != null &&
             productoEnEdicion == null
         ) {
+
             Column(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
+
                 Text("Producto no disponible.")
 
                 TextButton(
@@ -161,6 +165,11 @@ fun GestionProductosScreen(
 
             FormularioProductoScreen(
                 producto = productoEnEdicion,
+
+                // NUEVO: Recuperar la fotografía existente
+                imagenUriInicial = productoEnEdicion?.let {
+                    imagenesProductos[it.id]
+                },
 
                 onVolver = {
                     mostrandoFormulario = false
@@ -195,7 +204,7 @@ fun GestionProductosScreen(
         return
     }
 
-    // Buscar productos
+    // Buscar por nombre
     val productosFiltrados = productos.filter {
         it.nombre.contains(
             busqueda,
@@ -211,7 +220,9 @@ fun GestionProductosScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        TextButton(onClick = onVolver) {
+        TextButton(
+            onClick = onVolver
+        ) {
             Text("← Volver al inicio")
         }
 
@@ -224,6 +235,7 @@ fun GestionProductosScreen(
             text = "Productos registrados: ${productos.size}"
         )
 
+        // Crear producto
         Button(
             onClick = {
                 idProductoEditando = null
@@ -234,6 +246,7 @@ fun GestionProductosScreen(
             Text("+ Nuevo producto")
         }
 
+        // Buscador
         OutlinedTextField(
             value = busqueda,
             onValueChange = {
@@ -279,6 +292,10 @@ fun GestionProductosScreen(
                     val estaActivo =
                         estadosProductos[producto.id] ?: true
 
+                    // NUEVO: URI de la fotografía
+                    val imagenUri =
+                        imagenesProductos[producto.id]
+
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -288,6 +305,17 @@ fun GestionProductosScreen(
                             verticalArrangement =
                                 Arrangement.spacedBy(8.dp)
                         ) {
+
+                            // NUEVO: Mostrar fotografía
+                            if (!imagenUri.isNullOrBlank()) {
+
+                                ImagenProductoVistaPrevia(
+                                    imagenUri = imagenUri,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp)
+                                )
+                            }
 
                             Text(
                                 text = producto.nombre,
@@ -310,7 +338,6 @@ fun GestionProductosScreen(
                                 "Presentación: ${producto.presentacion}"
                             )
 
-                            // NUEVO: Mostrar estado
                             Text(
                                 text = if (estaActivo)
                                     "Estado: Activo"
@@ -336,7 +363,7 @@ fun GestionProductosScreen(
                                 Text("Editar")
                             }
 
-                            // NUEVO: Activar o desactivar
+                            // Activar / desactivar producto
                             Button(
                                 onClick = {
                                     productoPorConfirmar = producto

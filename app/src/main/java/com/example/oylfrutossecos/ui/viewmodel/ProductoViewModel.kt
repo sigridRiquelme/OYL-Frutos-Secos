@@ -19,7 +19,7 @@ class ProductoViewModel(
     private val repository: ProductoRepository
 ) : ViewModel() {
 
-    // Lista observable desde Room
+    // Observar productos almacenados en Room
     val productos: StateFlow<List<ProductoEntity>> =
         repository.productos.stateIn(
             scope = viewModelScope,
@@ -41,6 +41,7 @@ class ProductoViewModel(
         }
 
         viewModelScope.launch {
+
             try {
 
                 repository.crearProducto(
@@ -49,7 +50,10 @@ class ProductoViewModel(
                     precio = datos.precio.toInt(),
                     stock = datos.stock.toInt(),
                     descripcion = datos.descripcion.trim(),
-                    presentacion = datos.presentacion.trim()
+                    presentacion = datos.presentacion.trim(),
+
+                    // NUEVO: Enviar fotografía a Room
+                    imagenUri = datos.imagenUri
                 )
 
                 onResultado(true)
@@ -60,7 +64,7 @@ class ProductoViewModel(
         }
     }
 
-    // Editar producto
+    // Editar producto existente
     fun editarProducto(
         id: Int,
         datos: DatosNuevoProducto,
@@ -75,6 +79,7 @@ class ProductoViewModel(
         }
 
         viewModelScope.launch {
+
             try {
 
                 repository.editarProducto(
@@ -84,7 +89,10 @@ class ProductoViewModel(
                     precio = datos.precio.toInt(),
                     stock = datos.stock.toInt(),
                     descripcion = datos.descripcion.trim(),
-                    presentacion = datos.presentacion.trim()
+                    presentacion = datos.presentacion.trim(),
+
+                    // NUEVO: Guardar la fotografía editada
+                    imagenUri = datos.imagenUri
                 )
 
                 onResultado(true)
@@ -95,7 +103,7 @@ class ProductoViewModel(
         }
     }
 
-    // NUEVO: Activar o desactivar producto
+    // Activar o desactivar producto
     fun cambiarEstadoProducto(
         id: Int,
         activo: Boolean,
@@ -103,6 +111,7 @@ class ProductoViewModel(
     ) {
 
         viewModelScope.launch {
+
             try {
 
                 repository.cambiarEstadoProducto(
@@ -128,7 +137,8 @@ class ProductoViewModelFactory(
         modelClass: Class<T>
     ): T {
 
-        if (modelClass.isAssignableFrom(
+        if (
+            modelClass.isAssignableFrom(
                 ProductoViewModel::class.java
             )
         ) {
