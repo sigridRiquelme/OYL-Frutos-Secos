@@ -6,7 +6,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -16,15 +19,32 @@ fun LoginScreen(
     onIngresar: (String, String, String) -> Boolean = { _, _, _ -> false }
 ) {
 
-    var alias by remember { mutableStateOf("") }
-    var contrasena by remember { mutableStateOf("") }
-    var rol by remember { mutableStateOf("Cliente") }
-    var mensajeError by remember { mutableStateOf("") }
+    var alias by remember {
+        mutableStateOf("")
+    }
+
+    var contrasena by remember {
+        mutableStateOf("")
+    }
+
+    var rol by remember {
+        mutableStateOf("Cliente")
+    }
+
+    var mensajeError by remember {
+        mutableStateOf("")
+    }
+
+    // NUEVO: Controlar visibilidad de la contraseña
+    var mostrarContrasena by remember {
+        mutableStateOf(false)
+    }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(24.dp),
+
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -33,7 +53,6 @@ fun LoginScreen(
             text = "OYL Frutos Secos",
             style = MaterialTheme.typography.headlineMedium
         )
-
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -51,9 +70,12 @@ fun LoginScreen(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 RadioButton(
                     selected = rol == "Cliente",
-                    onClick = { rol = "Cliente" }
+                    onClick = {
+                        rol = "Cliente"
+                    }
                 )
 
                 Text("Cliente")
@@ -64,41 +86,84 @@ fun LoginScreen(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 RadioButton(
                     selected = rol == "Administrador",
-                    onClick = { rol = "Administrador" }
+                    onClick = {
+                        rol = "Administrador"
+                    }
                 )
 
                 Text("Administrador")
             }
         }
 
-
         Spacer(modifier = Modifier.height(24.dp))
 
+        // ALIAS
         OutlinedTextField(
             value = alias,
-            onValueChange = { alias = it },
-            label = { Text("Alias") },
+
+            onValueChange = {
+                alias = it
+            },
+
+            label = {
+                Text("Alias")
+            },
+
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // CONTRASEÑA CON OPCIÓN VER / OCULTAR
         OutlinedTextField(
             value = contrasena,
-            onValueChange = { contrasena = it },
-            label = { Text("Contraseña") },
-            visualTransformation = PasswordVisualTransformation(),
+
+            onValueChange = {
+                contrasena = it
+            },
+
+            label = {
+                Text("Contraseña")
+            },
+
+            visualTransformation = if (mostrarContrasena) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+
+            trailingIcon = {
+
+                TextButton(
+                    onClick = {
+                        mostrarContrasena = !mostrarContrasena
+                    }
+                ) {
+
+                    Text(
+                        if (mostrarContrasena) {
+                            "Ocultar"
+                        } else {
+                            "Ver"
+                        }
+                    )
+                }
+            },
+
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // INGRESAR
         Button(
             onClick = {
+
                 val accesoCorrecto = onIngresar(
                     rol,
                     alias.trim(),
@@ -111,12 +176,14 @@ fun LoginScreen(
                     "Alias o contraseña incorrectos"
                 }
             },
+
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Ingresar")
         }
 
         if (mensajeError.isNotEmpty()) {
+
             Text(
                 text = mensajeError,
                 color = MaterialTheme.colorScheme.error

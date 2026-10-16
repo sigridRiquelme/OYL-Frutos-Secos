@@ -15,6 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
+
 @Composable
 fun GestionInventarioScreen(
     productos: List<ProductoCatalogo>,
@@ -65,7 +69,10 @@ fun GestionInventarioScreen(
     var procesando by remember {
         mutableStateOf(false)
     }
-
+// Mensaje visible después de guardar un ajuste correctamente
+    var mensajeAjusteExitoso by remember {
+        mutableStateOf<String?>(null)
+    }
 // Abrir automáticamente el ajuste del producto
 // que llegó desde el escáner QR
     LaunchedEffect(productoInicialId) {
@@ -252,13 +259,26 @@ fun GestionInventarioScreen(
 
                             procesando = false
 
+
                             if (error == null) {
 
-                                // Ajuste exitoso
+                                // Crear mensaje solamente después de guardar
+                                val tipoMovimiento = if (esEntrada) {
+                                    "Entrada"
+                                } else {
+                                    "Salida"
+                                }
+
+                                mensajeAjusteExitoso =
+                                    "$tipoMovimiento de $cantidadAjuste unidades " +
+                                            "registrada correctamente para ${producto.nombre}."
+
+                                // Cerrar formulario y limpiar cantidad
                                 productoEnAjuste = null
                                 cantidadAjuste = ""
 
                             } else {
+
 
                                 // Mostrar error y conservar formulario
                                 errorAjuste = error
@@ -311,6 +331,65 @@ fun GestionInventarioScreen(
             text = "Gestión de Inventario",
             style = MaterialTheme.typography.headlineMedium
         )
+
+// CONFIRMACIÓN ANIMADA DEL AJUSTE
+        mensajeAjusteExitoso?.let { mensaje ->
+
+            var iniciarAnimacion by remember(mensaje) {
+                mutableStateOf(false)
+            }
+
+            LaunchedEffect(mensaje) {
+                iniciarAnimacion = true
+            }
+
+            val opacidad by animateFloatAsState(
+                targetValue = if (iniciarAnimacion) 1f else 0f,
+                animationSpec = tween(durationMillis = 450),
+                label = "Opacidad ajuste exitoso"
+            )
+
+            val desplazamiento by animateFloatAsState(
+                targetValue = if (iniciarAnimacion) 0f else -25f,
+                animationSpec = tween(durationMillis = 450),
+                label = "Desplazamiento ajuste exitoso"
+            )
+
+            ElevatedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = opacidad
+                        translationY = desplazamiento
+                    }
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+
+                    Text(
+                        text = "✓ Inventario actualizado",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text = mensaje,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    TextButton(
+                        onClick = {
+                            mensajeAjusteExitoso = null
+                        }
+                    ) {
+                        Text("Entendido")
+                    }
+                }
+            }
+        }
 
         // Resumen
         ElevatedCard(

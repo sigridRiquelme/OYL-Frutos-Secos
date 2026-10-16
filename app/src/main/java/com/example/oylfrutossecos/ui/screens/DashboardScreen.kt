@@ -637,57 +637,26 @@ fun DashboardScreen(
                     )
                 }
 
+
                 // PEDIDO REGISTRADO EXITOSAMENTE
                 "PedidoExito" -> {
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
+                    PedidoExitoScreen(
+                        numeroPedido = numeroPedidoDemo,
 
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                        modalidad = modalidadPedidoDemo,
 
-                        Text(
-                            text = "✓ Solicitud registrada",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
+                        total = totalPedidoDemo,
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        onVolverInicio = {
+                            pantallaSeleccionada = "Inicio"
+                        },
 
-                        Text("Número de pedido")
-
-                        Text(
-                            text = numeroPedidoDemo,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text("Estado: Pendiente")
-
-                        Text("Modalidad: $modalidadPedidoDemo")
-
-                        Text("Total: $$totalPedidoDemo")
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Text(
-                            "Pedido guardado localmente en este dispositivo."
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Button(
-                            onClick = {
-                                pantallaSeleccionada = "Inicio"
-                            }
-                        ) {
-                            Text("Volver al inicio")
-                        }
-                    }
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
+
+
 
                 // OTRAS PANTALLAS PENDIENTES
                 else -> {
