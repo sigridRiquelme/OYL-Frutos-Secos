@@ -96,6 +96,10 @@ fun DashboardScreen(
 
                         onAbrirCarrito = {
                             pantallaSeleccionada = "Carrito"
+                        },
+
+                        onGestionProductos = {
+                            pantallaSeleccionada = "GestionProductos"
                         }
                     )
                 }
@@ -112,6 +116,27 @@ fun DashboardScreen(
                     )
                 }
 
+
+                "GestionProductos" -> {
+                    if (rol == "Administrador") {
+                        GestionProductosScreen(
+                            productos = productosCatalogo,
+
+                            onVolver = {
+                                pantallaSeleccionada = "Inicio"
+                            },
+
+                            onCrearProducto = { datos, onResultado ->
+                                productoViewModel.crearProducto(
+                                    datos,
+                                    onResultado
+                                )
+                            },
+
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
                 // NUEVA PANTALLA: CATALOGO
 
                 "Catalogo" -> {
@@ -337,7 +362,8 @@ fun DashboardScreen(
 fun InicioDashboard(
     rol: String,
     onAbrirCatalogo: () -> Unit,
-    onAbrirCarrito: () -> Unit
+    onAbrirCarrito: () -> Unit,
+    onGestionProductos: () -> Unit
 ) {
 
     Column(
@@ -372,7 +398,9 @@ fun InicioDashboard(
 
             TarjetaDashboard(
                 "Gestionar productos",
-                "Agregar y editar productos."
+                "Agregar y editar productos.",
+                onClick = onGestionProductos
+
             )
 
             TarjetaDashboard(
@@ -404,6 +432,7 @@ fun InicioDashboard(
                 "Mis pedidos",
                 "Revisa tus compras."
             )
+
         }
     }
 }

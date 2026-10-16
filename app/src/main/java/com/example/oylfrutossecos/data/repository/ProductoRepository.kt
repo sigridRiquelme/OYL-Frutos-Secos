@@ -32,4 +32,30 @@ class ProductoRepository(
     suspend fun eliminarProducto(producto: ProductoEntity) {
         productoDao.eliminarProducto(producto)
     }
+
+
+    // Crear un nuevo producto en la base de datos
+    suspend fun crearProducto(
+        nombre: String,
+        categoria: String,
+        precio: Int,
+        stock: Int,
+        descripcion: String,
+        presentacion: String
+    ) {
+        val nuevoId = productoDao.obtenerSiguienteId()
+
+        val nuevoProducto = ProductoEntity(
+            id = nuevoId,
+            nombre = nombre,
+            categoria = categoria,
+            precio = precio,
+            stock = stock,
+            descripcion = descripcion,
+            presentacion = presentacion
+        )
+
+        productoDao.insertarProducto(nuevoProducto)
+    }
+
 }

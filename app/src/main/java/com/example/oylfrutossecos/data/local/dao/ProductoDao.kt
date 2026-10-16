@@ -39,4 +39,14 @@ interface ProductoDao {
 
     @Query("SELECT COUNT(*) FROM productos")
     suspend fun contarProductos(): Int
+
+
+    // Obtener un ID disponible para un nuevo producto
+    @Query("SELECT COALESCE(MAX(id), 0) + 1 FROM productos")
+    suspend fun obtenerSiguienteId(): Int
+
+    // Insertar un producto nuevo sin reemplazar otro
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertarProducto(producto: ProductoEntity)
+
 }
