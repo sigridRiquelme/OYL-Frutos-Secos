@@ -79,7 +79,9 @@ class MainActivity : ComponentActivity() {
 
                     when (pantallaActual) {
 
+                        // PANTALLA DE BIENVENIDA
                         "bienvenida" -> {
+
                             BienvenidaScreen(
                                 modifier = Modifier.padding(innerPadding),
 
@@ -93,7 +95,9 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // INICIO DE SESION
                         "login" -> {
+
                             LoginScreen(
                                 modifier = Modifier.padding(innerPadding),
 
@@ -117,6 +121,7 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     if (correcto) {
+
                                         rolActual = rol
                                         pantallaActual = "dashboard"
                                     }
@@ -126,7 +131,9 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // REGISTRO
                         "registro" -> {
+
                             RegistroScreen(
                                 modifier = Modifier.padding(innerPadding),
 
@@ -136,19 +143,35 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // DASHBOARD
                         "dashboard" -> {
+
                             DashboardScreen(
                                 rol = rolActual,
+
                                 modifier = Modifier.padding(innerPadding),
 
-                                // NUEVO: ENVIAMOS EL VIEWMODEL
-                                productoViewModel = productoViewModel
+                                productoViewModel = productoViewModel,
+
+                                // NUEVO: CIERRE DE SESION
+                                onCerrarSesion = {
+
+                                    // Restablecer rol
+                                    rolActual = "Cliente"
+
+                                    // Regresar al login
+                                    pantallaActual = "login"
+                                }
                             )
                         }
-                    }
-                }
-            }
-        }
+
+                    } // Cierra when
+
+                } // Cierra Scaffold
+
+            } // Cierra OYLFrutosSecosTheme
+
+        } // Cierra setContent
 
         // 5. INSERTAR PRODUCTOS INICIALES EN ROOM
         lifecycleScope.launch(Dispatchers.IO) {
@@ -164,7 +187,8 @@ class MainActivity : ComponentActivity() {
 
                 Log.d(
                     "OYL_ROOM",
-                    "Productos insertados ahora: $seInsertaron. Total guardados: $cantidad"
+                    "Productos insertados ahora: " +
+                            "$seInsertaron. Total guardados: $cantidad"
                 )
 
             } catch (error: Exception) {

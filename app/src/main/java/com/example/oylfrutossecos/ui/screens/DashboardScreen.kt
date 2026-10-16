@@ -24,8 +24,10 @@ import com.example.oylfrutossecos.data.local.DetallePedidoLocal
 fun DashboardScreen(
     rol: String,
     modifier: Modifier = Modifier,
-    productoViewModel: ProductoViewModel
+    productoViewModel: ProductoViewModel,
+    onCerrarSesion: () -> Unit
 ) {
+
 
     // Productos observados desde Room mediante MVVM
     val productosRoom by productoViewModel.productos.collectAsState()
@@ -305,6 +307,67 @@ fun DashboardScreen(
                         )
                     }
                 }
+
+// PANTALLA 15: PERFIL
+                "Perfil" -> {
+
+                    if (rol == "Administrador") {
+
+                        PerfilAdministradorScreen(
+
+                            productosActivos = productosRoom.count {
+                                it.activo
+                            },
+
+                            alertasStock = productosRoom.count {
+                                it.activo && it.stock in 0..10
+                            },
+
+                            pedidosPendientes = pedidosGuardados.count {
+                                it.estado == "Pendiente"
+                            },
+
+                            pedidosRegistrados = pedidosGuardados.size,
+
+                            onVolver = {
+                                pantallaSeleccionada = "Inicio"
+                            },
+
+                            onGestionProductos = {
+                                pantallaSeleccionada = "GestionProductos"
+                            },
+
+                            onGestionInventario = {
+                                idProductoDesdeQR = null
+                                filtroInventarioInicial = "Todos"
+                                pantallaSeleccionada = "GestionInventario"
+                            },
+
+                            onGestionPedidos = {
+                                filtroPedidosInicial = "Todos"
+                                pantallaSeleccionada = "Pedidos"
+                            },
+
+                            onNotificaciones = {
+                                pantallaSeleccionada = "Notificaciones"
+                            },
+
+                            onCerrarSesion = onCerrarSesion,
+
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                    } else {
+
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Perfil del Cliente pendiente de integración.")
+                        }
+                    }
+                }
+
 
                 // PANTALLA 14: NOTIFICACIONES
                 "Notificaciones" -> {
