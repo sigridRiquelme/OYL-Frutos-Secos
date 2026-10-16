@@ -19,7 +19,7 @@ interface ProductoDao {
     @Query("SELECT * FROM productos ORDER BY nombre ASC")
     fun obtenerProductos(): Flow<List<ProductoEntity>>
 
-    // Buscar producto por ID
+    // Obtener producto por ID
     @Query("SELECT * FROM productos WHERE id = :id LIMIT 1")
     suspend fun obtenerProductoPorId(id: Int): ProductoEntity?
 
@@ -27,7 +27,7 @@ interface ProductoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun guardarProducto(producto: ProductoEntity)
 
-    // Guardar lista de productos
+    // Guardar lista
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun guardarProductos(productos: List<ProductoEntity>)
 
@@ -47,16 +47,30 @@ interface ProductoDao {
     @Query("SELECT COALESCE(MAX(id), 0) + 1 FROM productos")
     suspend fun obtenerSiguienteId(): Int
 
-    // Insertar nuevo producto
+    // Insertar producto nuevo
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertarProducto(producto: ProductoEntity)
 
-    // NUEVO: Activar o desactivar un producto
+    // Activar o desactivar producto
     @Query(
         "UPDATE productos SET activo = :activo WHERE id = :id"
     )
     suspend fun cambiarEstadoProducto(
         id: Int,
         activo: Boolean
+    ): Int
+
+    // NUEVO: Ajustar existencias de manera segura
+    @Query(
+        """
+        UPDATE productos
+        SET stock = stock + :variacion
+        WHERE id = :id
+        AND (stock + :variacion) BETWEEN 0 AND 2147483647
+        """
+    )
+    suspend fun ajustarStock(
+        id: Int,
+        variacion: Int
     ): Int
 }

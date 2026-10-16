@@ -10,39 +10,34 @@ class ProductoRepository(
     private val productoDao: ProductoDao
 ) {
 
-    // Obtener todos los productos
     val productos: Flow<List<ProductoEntity>> =
         productoDao.obtenerProductos()
 
-    // Obtener producto por ID
     suspend fun obtenerProductoPorId(
         id: Int
     ): ProductoEntity? {
         return productoDao.obtenerProductoPorId(id)
     }
 
-    // Guardar producto
     suspend fun guardarProducto(
         producto: ProductoEntity
     ) {
         productoDao.guardarProducto(producto)
     }
 
-    // Actualizar producto
     suspend fun actualizarProducto(
         producto: ProductoEntity
     ) {
         productoDao.actualizarProducto(producto)
     }
 
-    // Eliminar producto
     suspend fun eliminarProducto(
         producto: ProductoEntity
     ) {
         productoDao.eliminarProducto(producto)
     }
 
-    // Crear un producto con fotografía opcional
+    // Crear producto con fotografía
     suspend fun crearProducto(
         nombre: String,
         categoria: String,
@@ -63,17 +58,14 @@ class ProductoRepository(
             stock = stock,
             descripcion = descripcion,
             presentacion = presentacion,
-
-            // NUEVO: Guardar dirección de la foto
             imagenUri = imagenUri,
-
             activo = true
         )
 
         productoDao.insertarProducto(nuevoProducto)
     }
 
-    // Editar un producto existente
+    // Editar producto existente
     suspend fun editarProducto(
         id: Int,
         nombre: String,
@@ -98,8 +90,6 @@ class ProductoRepository(
             stock = stock,
             descripcion = descripcion,
             presentacion = presentacion,
-
-            // NUEVO: Actualizar fotografía
             imagenUri = imagenUri
         )
 
@@ -123,6 +113,30 @@ class ProductoRepository(
         if (filasModificadas == 0) {
             throw IllegalArgumentException(
                 "No se encontró el producto"
+            )
+        }
+    }
+
+    // NUEVO: Registrar entrada o salida de existencias
+    suspend fun ajustarStock(
+        id: Int,
+        variacion: Int
+    ) {
+
+        require(variacion != 0) {
+            "La variación no puede ser cero"
+        }
+
+        val filasModificadas =
+            productoDao.ajustarStock(
+                id = id,
+                variacion = variacion
+            )
+
+        if (filasModificadas == 0) {
+            throw IllegalStateException(
+                "No se pudo ajustar el stock. " +
+                        "Verifica las existencias disponibles."
             )
         }
     }

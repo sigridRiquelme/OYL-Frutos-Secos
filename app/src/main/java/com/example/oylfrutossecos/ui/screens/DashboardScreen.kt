@@ -87,6 +87,7 @@ fun DashboardScreen(
             when (pantallaSeleccionada) {
 
                 "Inicio" -> {
+
                     InicioDashboard(
                         rol = rol,
 
@@ -100,8 +101,13 @@ fun DashboardScreen(
 
                         onGestionProductos = {
                             pantallaSeleccionada = "GestionProductos"
+                        },
+
+                        onGestionInventario = {
+                            pantallaSeleccionada = "GestionInventario"
                         }
                     )
+
                 }
 
                 "Mapa" -> {
@@ -166,6 +172,46 @@ fun DashboardScreen(
                                     id,
                                     activo,
                                     onResultado
+                                )
+                            },
+
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+
+
+                "GestionInventario" -> {
+
+                    if (rol == "Administrador") {
+
+                        // Estados recuperados desde Room
+                        val estadosProductos = productosRoom.associate {
+                            it.id to it.activo
+                        }
+
+                        GestionInventarioScreen(
+                            productos = productosCatalogo,
+
+                            estadosProductos = estadosProductos,
+
+                            onVolver = {
+                                pantallaSeleccionada = "Inicio"
+                            },
+
+                            // NUEVO: Conectar ajustes de inventario
+                            onAjustarStock = {
+                                    id,
+                                    cantidadTexto,
+                                    esEntrada,
+                                    onResultado ->
+
+                                productoViewModel.ajustarStock(
+                                    id = id,
+                                    cantidadTexto = cantidadTexto,
+                                    esEntrada = esEntrada,
+                                    onResultado = onResultado
                                 )
                             },
 
@@ -397,13 +443,16 @@ fun DashboardScreen(
     }
 }
 
+
 @Composable
 fun InicioDashboard(
     rol: String,
     onAbrirCatalogo: () -> Unit,
     onAbrirCarrito: () -> Unit,
-    onGestionProductos: () -> Unit
+    onGestionProductos: () -> Unit,
+    onGestionInventario: () -> Unit
 ) {
+
 
     Column(
         modifier = Modifier
@@ -442,10 +491,13 @@ fun InicioDashboard(
 
             )
 
+
             TarjetaDashboard(
-                "Inventario",
-                "Consultar y modificar existencias."
+                titulo = "Inventario",
+                descripcion = "Consultar existencias y alertas de stock.",
+                onClick = onGestionInventario
             )
+
 
         } else {
 

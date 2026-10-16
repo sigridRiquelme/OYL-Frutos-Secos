@@ -9,6 +9,7 @@ import com.example.oylfrutossecos.data.local.entity.ProductoEntity
 import com.example.oylfrutossecos.data.repository.ProductoRepository
 import com.example.oylfrutossecos.ui.validation.DatosNuevoProducto
 import com.example.oylfrutossecos.ui.validation.ValidadorProducto
+import com.example.oylfrutossecos.ui.validation.ValidadorInventario
 
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,7 @@ class ProductoViewModel(
     private val repository: ProductoRepository
 ) : ViewModel() {
 
-    // Observar productos almacenados en Room
+    // Productos observados desde Room
     val productos: StateFlow<List<ProductoEntity>> =
         repository.productos.stateIn(
             scope = viewModelScope,
@@ -27,7 +28,7 @@ class ProductoViewModel(
             initialValue = emptyList()
         )
 
-    // Crear nuevo producto
+    // Crear producto
     fun crearProducto(
         datos: DatosNuevoProducto,
         onResultado: (Boolean) -> Unit
@@ -41,7 +42,6 @@ class ProductoViewModel(
         }
 
         viewModelScope.launch {
-
             try {
 
                 repository.crearProducto(
@@ -51,8 +51,6 @@ class ProductoViewModel(
                     stock = datos.stock.toInt(),
                     descripcion = datos.descripcion.trim(),
                     presentacion = datos.presentacion.trim(),
-
-                    // NUEVO: Enviar fotografía a Room
                     imagenUri = datos.imagenUri
                 )
 
@@ -64,7 +62,7 @@ class ProductoViewModel(
         }
     }
 
-    // Editar producto existente
+    // Editar producto
     fun editarProducto(
         id: Int,
         datos: DatosNuevoProducto,
@@ -79,7 +77,6 @@ class ProductoViewModel(
         }
 
         viewModelScope.launch {
-
             try {
 
                 repository.editarProducto(
@@ -90,8 +87,6 @@ class ProductoViewModel(
                     stock = datos.stock.toInt(),
                     descripcion = datos.descripcion.trim(),
                     presentacion = datos.presentacion.trim(),
-
-                    // NUEVO: Guardar la fotografía editada
                     imagenUri = datos.imagenUri
                 )
 
@@ -111,7 +106,6 @@ class ProductoViewModel(
     ) {
 
         viewModelScope.launch {
-
             try {
 
                 repository.cambiarEstadoProducto(
@@ -126,9 +120,59 @@ class ProductoViewModel(
             }
         }
     }
+
+    // NUEVO: Registrar entrada o salida de stock
+    fun ajustarStock(
+        id: Int,
+        cantidadTexto: String,
+        esEntrada: Boolean,
+        onResultado: (String?) -> Unit
+    ) {
+
+        // Validación independiente de la pantalla
+        val errorValidacion =
+            ValidadorInventario.validarCantidad(
+                cantidadTexto
+            )
+
+        if (errorValidacion != null) {
+            onResultado(errorValidacion)
+            return
+        }
+
+        val cantidad = cantidadTexto.trim().toInt()
+
+        // Entrada suma; salida resta
+        val variacion = if (esEntrada) {
+            cantidad
+        } else {
+            -cantidad
+        }
+
+        viewModelScope.launch {
+
+            try {
+
+                repository.ajustarStock(
+                    id = id,
+                    variacion = variacion
+                )
+
+                // null significa operación exitosa
+                onResultado(null)
+
+            } catch (error: Exception) {
+
+                onResultado(
+                    "No se pudo ajustar el stock. " +
+                            "Verifica las existencias disponibles."
+                )
+            }
+        }
+    }
 }
 
-// Factory para construir el ViewModel
+// Factory del ViewModel
 class ProductoViewModelFactory(
     private val repository: ProductoRepository
 ) : ViewModelProvider.Factory {
