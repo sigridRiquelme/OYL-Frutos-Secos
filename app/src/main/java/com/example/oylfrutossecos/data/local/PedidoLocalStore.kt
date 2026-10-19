@@ -1,4 +1,3 @@
-
 package com.example.oylfrutossecos.data.local
 
 import android.content.Context
@@ -13,10 +12,11 @@ data class DetallePedidoLocal(
     val precioUnitario: Int
 )
 
-// Información de un pedido
+// Información de un pedido (con clienteId para separar historiales)
 data class PedidoLocal(
     val numero: String,
     val fecha: Long,
+    val clienteId: Int?,
     val nombreCliente: String,
     val telefono: String,
     val modalidad: String,
@@ -67,6 +67,7 @@ object PedidoLocalStore {
             PedidoLocal(
                 numero = json.getString("numero"),
                 fecha = json.getLong("fecha"),
+                clienteId = if (json.has("clienteId") && !json.isNull("clienteId")) json.getInt("clienteId") else null,
                 nombreCliente = json.getString("nombreCliente"),
                 telefono = json.getString("telefono"),
                 modalidad = json.getString("modalidad"),
@@ -78,10 +79,11 @@ object PedidoLocalStore {
         }
     }
 
-    // Registrar una compra nueva
+    // Registrar una compra nueva asociada al cliente actual
     @Synchronized
     fun registrarPedido(
         context: Context,
+        clienteId: Int?,
         nombreCliente: String,
         telefono: String,
         modalidad: String,
@@ -115,6 +117,7 @@ object PedidoLocalStore {
             numero = "OYL-P-" +
                     siguienteNumero.toString().padStart(4, '0'),
             fecha = System.currentTimeMillis(),
+            clienteId = clienteId,
             nombreCliente = nombreCliente,
             telefono = telefono,
             modalidad = modalidad,
@@ -157,7 +160,6 @@ object PedidoLocalStore {
             "El pedido no existe."
         )
 
-        // Transiciones permitidas
         val estadosPermitidos = when (pedidoActual.estado) {
 
             "Pendiente" ->
@@ -229,6 +231,7 @@ object PedidoLocalStore {
                 JSONObject()
                     .put("numero", pedido.numero)
                     .put("fecha", pedido.fecha)
+                    .put("clienteId", pedido.clienteId ?: JSONObject.NULL) // <-- NUEVO
                     .put("nombreCliente", pedido.nombreCliente)
                     .put("telefono", pedido.telefono)
                     .put("modalidad", pedido.modalidad)

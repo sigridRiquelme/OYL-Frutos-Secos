@@ -1,4 +1,3 @@
-
 package com.example.oylfrutossecos.ui.screens
 
 import androidx.compose.foundation.layout.*
@@ -8,17 +7,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
 import androidx.compose.runtime.*
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.EstadoEdicionPerfil
-
 import com.example.oylfrutossecos.data.local.entity.ClienteEntity
 
 @Composable
 fun PerfilScreen(
     cliente: ClienteEntity?,
     clienteViewModel: ClienteViewModel,
+    onCerrarSesion: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
 
@@ -81,7 +79,7 @@ fun PerfilScreen(
                 singleLine = true
             )
 
-            // El nombre de usuario no se puede modificar
+
             DatosPerfil(
                 titulo = "Nombre de usuario",
                 valor = cliente.nombreUsuario
@@ -175,6 +173,19 @@ fun PerfilScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Editar perfil")
+            }
+
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = { onCerrarSesion() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Cerrar sesión")
             }
         }
 
