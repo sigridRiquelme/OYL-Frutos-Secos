@@ -5,12 +5,24 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.execSQL
 
 import com.example.oylfrutossecos.data.local.dao.ProductoDao
 import com.example.oylfrutossecos.data.local.dao.ClienteDao
-
 import com.example.oylfrutossecos.data.local.entity.ProductoEntity
 import com.example.oylfrutossecos.data.local.entity.ClienteEntity
+
+// Migración de la versión 2 a la versión 3
+private val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "ALTER TABLE productos " +
+                    "ADD COLUMN activo INTEGER NOT NULL DEFAULT 1"
+        )
+    }
+}
 
 @Database(
     entities = [
@@ -39,7 +51,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "oyl_frutos_secos.db"
-                ).build()
+                )
+                    .addMigrations(MIGRATION_2_3)
+                    .build()
 
                 INSTANCE = instancia
                 instancia

@@ -12,6 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OYLFrutosSecos">
 
+        <!-- Actividad principal -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -21,16 +22,16 @@
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- Escáner QR -->
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="barcode_ui" />
 
-        <!-- NUEVO: Compartir fotografías con la cámara -->
+        <!-- Cámara y fotografías de productos -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -42,6 +43,11 @@
                 android:resource="@xml/oyl_file_paths" />
 
         </provider>
+
+        <!-- Google Maps -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
 
     </application>
 

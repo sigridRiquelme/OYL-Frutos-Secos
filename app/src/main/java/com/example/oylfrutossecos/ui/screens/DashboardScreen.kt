@@ -1,4 +1,3 @@
-
 package com.example.oylfrutossecos.ui.screens
 
 import android.widget.Toast
@@ -78,7 +77,7 @@ fun DashboardScreen(
         mutableStateOf("Inicio")
     }
 
-    // Producto que llega desde el esc├íner QR
+    // Producto que llega desde el escáner QR
     var idProductoDesdeQR by rememberSaveable {
         mutableStateOf<Int?>(null)
     }
@@ -117,7 +116,7 @@ fun DashboardScreen(
             productosActuales = productosRoom
         )
 
-        // Si algo cambi├│, actualizar la informaci├│n visual
+        // Si algo cambió, actualizar la información visual
         // del carrito para que el Cliente pueda corregirlo.
         if (error != null) {
 
@@ -137,7 +136,7 @@ fun DashboardScreen(
         return error
     }
 
-    // Informaci├│n para la pantalla de pedido exitoso
+    // Información para la pantalla de pedido exitoso
     var numeroPedidoDemo by rememberSaveable {
         mutableStateOf("")
     }
@@ -150,7 +149,7 @@ fun DashboardScreen(
         mutableStateOf("")
     }
 
-    // Navegaci├│n inferior
+    // Navegación inferior
     val opciones = listOf(
         "Inicio" to "🏠",
         "Mapa" to "📍",
@@ -218,6 +217,10 @@ fun DashboardScreen(
                             pantallaSeleccionada = "Carrito"
                         },
 
+                        onVerMisPedidos = {
+                            pantallaSeleccionada = "Pedidos"
+                        },
+
                         onGestionProductos = {
                             pantallaSeleccionada = "GestionProductos"
                         },
@@ -238,7 +241,7 @@ fun DashboardScreen(
                     )
                 }
 
-                // ESC├üNER QR
+                // ESCÁNER QR
                 "QR" -> {
 
                     val estadosProductos = productosRoom.associate {
@@ -267,7 +270,7 @@ fun DashboardScreen(
                     )
                 }
 
-                // GESTI├ôN DE PRODUCTOS
+                // GESTIÓN DE PRODUCTOS
                 "GestionProductos" -> {
 
                     if (rol == "Administrador") {
@@ -319,7 +322,7 @@ fun DashboardScreen(
                     }
                 }
 
-                // GESTI├ôN DE INVENTARIO
+                // GESTIÓN DE INVENTARIO
                 "GestionInventario" -> {
 
                     if (rol == "Administrador") {
@@ -410,11 +413,14 @@ fun DashboardScreen(
                         )
 
                     } else {
+
                         PerfilScreen(
                             cliente = clienteActual,
                             clienteViewModel = clienteViewModel,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            onCerrarSesion = onCerrarSesion
                         )
+
                     }
                 }
 
@@ -457,7 +463,7 @@ fun DashboardScreen(
                 }
 
 
-                // GESTI├ôN DE PEDIDOS
+                // GESTIÓN DE PEDIDOS
                 "Pedidos" -> {
 
                     if (rol == "Administrador") {
@@ -499,19 +505,19 @@ fun DashboardScreen(
                         )
 
                     } else {
-
-                        // La pantalla de pedidos espec├¡fica del Cliente
-                        // se implementar├í en una etapa posterior
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Pantalla: Pedidos")
-                        }
+                        // Historial individual del Cliente autenticado
+                        MisPedidosScreen(
+                            pedidos = pedidosGuardados,
+                            clienteId = clienteId,
+                            onVolver = {
+                                pantallaSeleccionada = "Inicio"
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
 
-                // CAT├üLOGO
+                // CATÁLOGO
                 "Catalogo" -> {
 
                     CatalogoScreen(
@@ -601,7 +607,7 @@ fun DashboardScreen(
                             ) {
 
                                 // Permitir reducir la cantidad aunque
-                                // todav├¡a supere el stock actualizado.
+                                // todavía supere el stock actualizado.
                                 // Para aumentar, respetar el stock real.
                                 carrito[id] = nuevaCantidad
 
@@ -641,7 +647,7 @@ fun DashboardScreen(
                     )
                 }
 
-                // CONFIRMACI├ôN DE PEDIDO
+                // CONFIRMACIÓN DE PEDIDO
                 "Confirmacion" -> {
 
                     ConfirmacionPedidoScreen(
@@ -666,7 +672,7 @@ fun DashboardScreen(
 
                             if (errorValidacion != null) {
 
-                                // Avisar al Cliente qu├® cambi├│
+                                // Avisar al Cliente qué cambió
                                 Toast.makeText(
                                     context,
                                     errorValidacion,
@@ -679,7 +685,7 @@ fun DashboardScreen(
 
                             } else {
 
-                                // Solo registrar si la validaci├│n fue exitosa
+                                // Solo registrar si la validación fue exitosa
                                 try {
 
                                     // Preparar los productos de la compra
@@ -707,6 +713,7 @@ fun DashboardScreen(
                                     // Guardar el pedido localmente
                                     val pedido = PedidoLocalStore.registrarPedido(
                                         context = context,
+                                        clienteId = clienteId,
                                         nombreCliente = nombre,
                                         telefono = telefono,
                                         modalidad = modalidad,
@@ -717,16 +724,16 @@ fun DashboardScreen(
                                     // Actualizar historial
                                     pedidosGuardados = pedidosGuardados + pedido
 
-                                    // Preparar la pantalla de ├®xito
+                                    // Preparar la pantalla de éxito
                                     numeroPedidoDemo = pedido.numero
                                     totalPedidoDemo = pedido.total
                                     modalidadPedidoDemo = pedido.modalidad
 
-                                    // Vaciar carrito ├║nicamente despu├®s de guardar
+                                    // Vaciar carrito únicamente después de guardar
                                     carrito.clear()
                                     productosCarrito.clear()
 
-                                    // Mostrar confirmaci├│n animada
+                                    // Mostrar confirmación animada
                                     pantallaSeleccionada = "PedidoExito"
 
                                 } catch (error: Exception) {
@@ -785,7 +792,7 @@ fun DashboardScreen(
             }
         }
 
-        // BARRA DE NAVEGACI├ôN INFERIOR
+        // BARRA DE NAVEGACIÓN INFERIOR
         NavigationBar {
 
             opciones.forEach { (nombre, icono) ->
@@ -830,6 +837,7 @@ fun InicioDashboard(
     rol: String,
     onAbrirCatalogo: () -> Unit,
     onAbrirCarrito: () -> Unit,
+    onVerMisPedidos: () -> Unit,
     onGestionProductos: () -> Unit,
     onGestionInventario: () -> Unit,
     productosStockBajo: Int,
@@ -882,7 +890,7 @@ fun InicioDashboard(
                 descripcion = if (pedidosPendientes == 0) {
                     "No tienes pedidos pendientes."
                 } else {
-                    "Tienes $pedidosPendientes pedidos esperando atenci├│n. " +
+                    "Tienes $pedidosPendientes pedidos esperando atención. " +
                             "Pulsa para revisarlos."
                 },
 
@@ -945,8 +953,9 @@ fun InicioDashboard(
             )
 
             TarjetaDashboard(
-                "Mis pedidos",
-                "Revisa tus compras."
+                titulo = "Mis pedidos",
+                descripcion = "Revisa tus compras.",
+                onClick = onVerMisPedidos
             )
         }
     }
