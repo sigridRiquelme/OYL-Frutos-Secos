@@ -1,23 +1,19 @@
-
 package com.example.oylfrutossecos.ui.screens
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-
 import androidx.compose.material3.*
-
 import androidx.compose.runtime.*
-
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -25,9 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val VerdeOYL = Color(0xFF1B5E20)
-private val FondoOYL = Color(0xFFF8F9F3)
-private val TextoOYL = Color(0xFF26332A)
+private val VerdeBienvenida = Color(0xFF176243)
 
 @Composable
 fun BienvenidaScreen(
@@ -35,202 +29,104 @@ fun BienvenidaScreen(
     onComenzar: () -> Unit = {},
     onYaTengoCuenta: () -> Unit = onComenzar
 ) {
-
-    // Indica cuándo comienza la animación
-    var animacionIniciada by remember {
-        mutableStateOf(false)
-    }
-
-    // Activar animación al entrar en esta pantalla
-    LaunchedEffect(Unit) {
-        animacionIniciada = true
-    }
-
-    // Animación 1: Aparición progresiva
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
     val opacidad by animateFloatAsState(
-        targetValue = if (animacionIniciada) 1f else 0f,
-
-        animationSpec = tween(
-            durationMillis = 800,
-            easing = FastOutSlowInEasing
-        ),
-
-        label = "Opacidad bienvenida"
-    )
-
-    // Animación 2: Desplazamiento vertical suave
-    val desplazamiento by animateFloatAsState(
-        targetValue = if (animacionIniciada) 0f else 45f,
-
-        animationSpec = tween(
-            durationMillis = 800,
-            easing = FastOutSlowInEasing
-        ),
-
-        label = "Desplazamiento bienvenida"
-    )
-
-    // Animación 3: El logo aumenta suavemente de tamaño
-    val escalaLogo by animateFloatAsState(
-        targetValue = if (animacionIniciada) 1f else 0.80f,
-
-        animationSpec = tween(
-            durationMillis = 850,
-            easing = FastOutSlowInEasing
-        ),
-
-        label = "Escala logo OYL"
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(550, easing = FastOutSlowInEasing),
+        label = "entradaBienvenida"
     )
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(FondoOYL)
-            .verticalScroll(rememberScrollState())
-
-            // Aplicar animación al contenido
-            .graphicsLayer {
-                alpha = opacidad
-                translationY = desplazamiento
-            }
-
-            .padding(24.dp),
-
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 22.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Logo animado
-        Text(
-            text = "OYL",
-
-            modifier = Modifier.graphicsLayer {
-                scaleX = escalaLogo
-                scaleY = escalaLogo
-            },
-
-            fontSize = 60.sp,
-            fontWeight = FontWeight.Bold,
-            color = VerdeOYL
-        )
-
-        Text(
-            text = "FRUTOS SECOS",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextoOYL
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Productos naturales\nmás cerca de ti",
-            fontSize = 18.sp,
-            textAlign = TextAlign.Center,
-            color = TextoOYL
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Espacio para la fotografía
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(170.dp)
-                .background(
-                    Color(0xFFE5EDD9),
-                    RoundedCornerShape(20.dp)
-                ),
-
-            contentAlignment = Alignment.Center
-        ) {
-
-            Text(
-                text = "🥜 🌰 🥜",
-                fontSize = 40.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(30.dp))
-
+        // Encabezado, foto y beneficios pueden desplazarse en telefonos pequeños.
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.weight(1f).fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .graphicsLayer { alpha = opacidad },
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(Modifier.height(22.dp))
+            Text("OYL", fontSize = 54.sp, fontWeight = FontWeight.ExtraBold,
+                color = VerdeBienvenida, letterSpacing = 2.sp)
+            Text("FRUTOS SECOS", fontSize = 15.sp,
+                fontWeight = FontWeight.Bold, letterSpacing = 3.sp,
+                color = MaterialTheme.colorScheme.onBackground)
+            Spacer(Modifier.height(12.dp))
+            Text("Productos naturales, más cerca de ti", textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(22.dp))
 
-            BeneficioOYL("Catálogo actualizado")
-            BeneficioOYL("Pedidos online")
-            BeneficioOYL("Retiros y despachos")
-            BeneficioOYL("Productos saludables")
+            // Fotografía auténtica de frutos secos; nunca usar emojis como imagen.
+            Box(
+                modifier = Modifier.fillMaxWidth().height(205.dp)
+                    .clip(RoundedCornerShape(23.dp))
+            ) {
+                FotoProductoOYL(
+                    nombre = "Selección natural de frutos secos",
+                    imagenUri = null,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            Spacer(Modifier.height(24.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(13.dp)
+            ) {
+                BeneficioBienvenida("Catálogo actualizado")
+                BeneficioBienvenida("Pedidos desde tu celular")
+                BeneficioBienvenida("Tiendas y puntos de retiro")
+                BeneficioBienvenida("Productos saludables")
+            }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            onClick = onComenzar,
-
-            modifier = Modifier.fillMaxWidth(),
-
-            colors = ButtonDefaults.buttonColors(
-                containerColor = VerdeOYL
-            ),
-
-            shape = RoundedCornerShape(25.dp)
+        // Acciones fijas y legibles incluso si el contenido anterior hace scroll.
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .padding(top = 10.dp, bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
-
-            Text(
-                "Comenzar",
-                fontSize = 16.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        OutlinedButton(
-            onClick = onYaTengoCuenta,
-
-            modifier = Modifier.fillMaxWidth(),
-
-            shape = RoundedCornerShape(25.dp)
-        ) {
-
-            Text(
-                text = "Ya tengo una cuenta",
-                color = VerdeOYL
-            )
+            Button(
+                onClick = onComenzar,
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = VerdeBienvenida,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(15.dp)
+            ) {
+                Text("Comenzar", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+            OutlinedButton(
+                onClick = onYaTengoCuenta,
+                modifier = Modifier.fillMaxWidth().height(49.dp),
+                shape = RoundedCornerShape(15.dp)
+            ) {
+                Text("Ya tengo una cuenta", fontWeight = FontWeight.SemiBold,
+                    color = VerdeBienvenida)
+            }
         }
     }
 }
 
 @Composable
-private fun BeneficioOYL(texto: String) {
-
+private fun BeneficioBienvenida(titulo: String) {
     Row(
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-
-        modifier = Modifier.fillMaxWidth()
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-
         Box(
-            modifier = Modifier
-                .size(28.dp)
-                .background(VerdeOYL, CircleShape),
-
+            modifier = Modifier.size(27.dp)
+                .background(Color(0xFFE7F1E7), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-
-            Text(
-                text = "✓",
-                color = Color.White
-            )
+            Text("✓", color = VerdeBienvenida, fontWeight = FontWeight.Bold)
         }
-
-        Text(
-            text = texto,
-            fontSize = 15.sp,
-            color = TextoOYL
-        )
+        Text(titulo, color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.bodyMedium)
     }
 }

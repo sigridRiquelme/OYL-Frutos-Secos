@@ -1,4 +1,3 @@
-
 package com.example.oylfrutossecos.data.local.dao
 
 import androidx.room.Dao
@@ -9,57 +8,34 @@ import com.example.oylfrutossecos.data.local.entity.ClienteEntity
 
 @Dao
 interface ClienteDao {
-
-    // Registrar un nuevo cliente
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun registrarCliente(
-        cliente: ClienteEntity
-    ): Long
+    suspend fun registrarCliente(cliente: ClienteEntity): Long
 
-    // Buscar un cliente por nombre de usuario
+    @Query("SELECT * FROM clientes WHERE nombreUsuario = :nombreUsuario LIMIT 1")
+    suspend fun buscarPorNombreUsuario(nombreUsuario: String): ClienteEntity?
+
+    @Query("SELECT * FROM clientes WHERE id = :id LIMIT 1")
+    suspend fun buscarPorId(id: Int): ClienteEntity?
+
+    @Query("SELECT COUNT(*) FROM clientes WHERE nombreUsuario = :nombreUsuario COLLATE NOCASE")
+    suspend fun existeNombreUsuario(nombreUsuario: String): Int
+
+    // El alias ahora se puede editar; la entidad ya tiene un indice UNIQUE.
     @Query("""
-        SELECT * FROM clientes
-        WHERE nombreUsuario = :nombreUsuario
-        LIMIT 1
+        UPDATE clientes SET
+            nombre = :nombre,
+            nombreUsuario = :nombreUsuario,
+            correo = :correo,
+            telefono = :telefono,
+            direccion = :direccion
+        WHERE id = :clienteId
     """)
-    suspend fun buscarPorNombreUsuario(
-        nombreUsuario: String
-    ): ClienteEntity?
-
-    // Buscar un cliente por su ID
-    @Query("""
-        SELECT * FROM clientes
-        WHERE id = :id
-        LIMIT 1
-    """)
-    suspend fun buscarPorId(
-        id: Int
-    ): ClienteEntity?
-
-    // Comprobar si el nombre de usuario existe
-    @Query("""
-        SELECT COUNT(*) FROM clientes
-        WHERE nombreUsuario = :nombreUsuario
-    """)
-    suspend fun existeNombreUsuario(
-        nombreUsuario: String
-    ): Int
-
-
-    @Query("""
-    UPDATE clientes
-    SET nombre = :nombre,
-        correo = :correo,
-        telefono = :telefono,
-        direccion = :direccion
-    WHERE id = :clienteId
-""")
     suspend fun actualizarDatosCliente(
         clienteId: Int,
         nombre: String,
+        nombreUsuario: String,
         correo: String,
         telefono: String,
         direccion: String
     ): Int
-
 }
