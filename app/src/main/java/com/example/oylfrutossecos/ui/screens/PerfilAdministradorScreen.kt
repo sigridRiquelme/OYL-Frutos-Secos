@@ -205,27 +205,6 @@ fun PerfilAdministradorScreen(
 
         HorizontalDivider()
 
-        // INFORMACIÓN DE LA APLICACIÓN
-        Text(
-            text = "Acerca de la aplicación",
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Text(
-            text = "OYL Frutos Secos es una aplicación " +
-                    "académica para gestionar productos, " +
-                    "inventario y solicitudes de compra."
-        )
-
-        Text(
-            text = "Los datos administrativos se almacenan " +
-                    "localmente en este dispositivo.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        HorizontalDivider()
-
         // CERRAR SESIÓN
         Button(
             onClick = {

@@ -3,11 +3,13 @@ package com.example.oylfrutossecos.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.EstadoEdicionPerfil
 import com.example.oylfrutossecos.data.local.entity.ClienteEntity
@@ -19,25 +21,23 @@ fun PerfilScreen(
     onCerrarSesion: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-
     var editando by remember { mutableStateOf(false) }
-
     var nombre by remember { mutableStateOf("") }
+    var nombreUsuario by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
-
     val estadoEdicion by clienteViewModel.estadoEdicionPerfil.collectAsState()
 
     LaunchedEffect(cliente?.id, editando) {
         if (editando && cliente != null) {
             nombre = cliente.nombre
+            nombreUsuario = cliente.nombreUsuario
             correo = cliente.correo
             telefono = cliente.telefono
             direccion = cliente.direccion
         }
     }
-
     LaunchedEffect(estadoEdicion) {
         if (estadoEdicion == EstadoEdicionPerfil.Exito) {
             editando = false
@@ -45,80 +45,69 @@ fun PerfilScreen(
         }
     }
 
-
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = modifier.fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-
-        Text(
-            text = "Mi perfil",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
+        Text("Mi perfil", style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold)
 
         if (cliente == null) {
-
-            Text("No se pudo cargar la información del cliente.")
-
+            Text("No se pudo cargar la informacion del cliente.")
         } else if (editando) {
-
-            Text(
-                text = "Editar información personal",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text("Editar informacion personal", style = MaterialTheme.typography.titleMedium)
 
             OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it },
+                value = nombre, onValueChange = { nombre = it },
                 label = { Text("Nombre completo") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                isError = nombre.trim().length < 3,
+                supportingText = { if (nombre.trim().length < 3) Text("Minimo 3 caracteres") }
+            )
+            OutlinedTextField(
+                value = nombreUsuario,
+                onValueChange = {
+                    nombreUsuario = it
+                    clienteViewModel.limpiarEstadoEdicionPerfil()
+                },
+                label = { Text("Nombre de usuario") },
+                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                isError = nombreUsuario.trim().length < 3 ||
+                    (estadoEdicion is EstadoEdicionPerfil.Error &&
+                        (estadoEdicion as EstadoEdicionPerfil.Error).mensaje.contains("usuario ya existe")),
+                supportingText = {
+                    if (nombreUsuario.trim().length < 3) Text("Minimo 3 caracteres")
+                    else if (estadoEdicion is EstadoEdicionPerfil.Error &&
+                        (estadoEdicion as EstadoEdicionPerfil.Error).mensaje.contains("usuario ya existe"))
+                        Text("El nombre de usuario ya existe")
+                }
+            )
+            OutlinedTextField(
+                value = correo, onValueChange = { correo = it },
+                label = { Text("Correo electronico") }, modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-
-
-            DatosPerfil(
-                titulo = "Nombre de usuario",
-                valor = cliente.nombreUsuario
-            )
-
             OutlinedTextField(
-                value = correo,
-                onValueChange = { correo = it },
-                label = { Text("Correo electrónico") },
-                modifier = Modifier.fillMaxWidth(),
+                value = telefono, onValueChange = { telefono = it },
+                label = { Text("Telefono") }, modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-
             OutlinedTextField(
-                value = telefono,
-                onValueChange = { telefono = it },
-                label = { Text("Teléfono") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value = direccion,
-                onValueChange = { direccion = it },
-                label = { Text("Dirección") },
-                modifier = Modifier.fillMaxWidth()
+                value = direccion, onValueChange = { direccion = it },
+                label = { Text("Direccion") }, modifier = Modifier.fillMaxWidth()
             )
 
             if (estadoEdicion is EstadoEdicionPerfil.Error) {
-                Text(
-                    text = (estadoEdicion as EstadoEdicionPerfil.Error).mensaje,
-                    color = MaterialTheme.colorScheme.error
-                )
+                Text((estadoEdicion as EstadoEdicionPerfil.Error).mensaje,
+                    color = MaterialTheme.colorScheme.error)
             }
-
             Button(
                 onClick = {
                     clienteViewModel.actualizarPerfil(
                         nombre = nombre,
+                        nombreUsuario = nombreUsuario,
                         correo = correo,
                         telefono = telefono,
                         direccion = direccion
@@ -127,14 +116,9 @@ fun PerfilScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = estadoEdicion != EstadoEdicionPerfil.Guardando
             ) {
-                Text(
-                    if (estadoEdicion == EstadoEdicionPerfil.Guardando)
-                        "Guardando..."
-                    else
-                        "Guardar cambios"
-                )
+                Text(if (estadoEdicion == EstadoEdicionPerfil.Guardando)
+                    "Guardando..." else "Guardar cambios")
             }
-
             OutlinedButton(
                 onClick = {
                     editando = false
@@ -142,77 +126,54 @@ fun PerfilScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = estadoEdicion != EstadoEdicionPerfil.Guardando
-            ) {
-                Text("Cancelar")
-            }
-
+            ) { Text("Cancelar") }
         } else {
-
-            Text(
-                text = "Información personal",
-                style = MaterialTheme.typography.titleMedium
-            )
-
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Hola, ${cliente.nombre.substringBefore(' ')}!",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold)
+                    Text("@${cliente.nombreUsuario}",
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+            }
             DatosPerfil("Nombre completo", cliente.nombre)
             DatosPerfil("Nombre de usuario", cliente.nombreUsuario)
-            DatosPerfil("Correo electrónico", cliente.correo)
-            DatosPerfil("Teléfono", cliente.telefono)
-
-            DatosPerfil(
-                "Dirección",
-                cliente.direccion.ifBlank {
-                    "Sin dirección registrada"
-                }
-            )
+            DatosPerfil("Correo electronico", cliente.correo)
+            DatosPerfil("Telefono", cliente.telefono)
+            DatosPerfil("Direccion", cliente.direccion.ifBlank { "Sin direccion registrada" })
 
             Button(
                 onClick = {
                     clienteViewModel.limpiarEstadoEdicionPerfil()
                     editando = true
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Editar perfil")
-            }
-
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+                }, modifier = Modifier.fillMaxWidth()
+            ) { Text("Editar perfil") }
+            Spacer(modifier = Modifier.height(4.dp))
             OutlinedButton(
-                onClick = { onCerrarSesion() },
+                onClick = onCerrarSesion,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.error
                 )
-            ) {
-                Text("Cerrar sesión")
-            }
+            ) { Text("Cerrar sesion") }
         }
-
     }
 }
 
 @Composable
-private fun DatosPerfil(
-    titulo: String,
-    valor: String
-) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = titulo,
-                style = MaterialTheme.typography.labelMedium
-            )
-
-            Text(
-                text = valor,
-                style = MaterialTheme.typography.bodyLarge
-            )
+private fun DatosPerfil(titulo: String, valor: String) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(titulo, style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(valor, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

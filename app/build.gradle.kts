@@ -1,6 +1,3 @@
-
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -21,21 +18,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner =
-            "androidx.test.runner.AndroidJUnitRunner"
-
-        // Configuración segura de Google Maps
-        val localProperties = Properties()
-        val localPropertiesFile = rootProject.file("local.properties")
-
-        if (localPropertiesFile.exists()) {
-            localPropertiesFile.inputStream().use {
-                localProperties.load(it)
-            }
-        }
-
-        manifestPlaceholders["MAPS_API_KEY"] =
-            localProperties.getProperty("MAPS_API_KEY", "")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -51,9 +34,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    buildFeatures {
-        compose = true
-    }
+    buildFeatures { compose = true }
 }
 
 dependencies {
@@ -62,6 +43,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -75,20 +57,21 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // Escáner QR
-    implementation(
-        "com.google.android.gms:play-services-code-scanner:16.1.0"
-    )
+    // Escaner QR, compatible con el que ya utilizaba el proyecto.
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 
-    // Base de datos Room
+    // Room y MVVM.
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-
-    // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
 
-    // Google Maps
-    implementation("com.google.maps.android:maps-compose:4.3.0")
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    // Mapa sencillo con datos OSM y teselas OpenFreeMap.
+    // MapLibre OpenGL evita pedir imagenes a tile.openstreetmap.org (403).
+    implementation("org.maplibre.gl:android-sdk-opengl:13.7.1")
+
+    // Fotografías de productos con Coil 3
+    implementation("io.coil-kt.coil3:coil-compose:3.4.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
 }

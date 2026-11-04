@@ -3,8 +3,29 @@ package com.example.oylfrutossecos.ui.screens
 import android.widget.Toast
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.oylfrutossecos.ui.viewmodel.CarritoViewModel
+import com.example.oylfrutossecos.ui.viewmodel.PedidosViewModel
+import com.example.oylfrutossecos.ui.components.ProductoImagen
+import com.example.oylfrutossecos.ui.theme.VerdeOyl
+import com.example.oylfrutossecos.ui.theme.VerdeOylOscuro
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModel
@@ -47,12 +69,12 @@ fun DashboardScreen(
     // Acceso al almacenamiento del dispositivo
     val context = LocalContext.current
 
-    // Pedidos registrados localmente
-    var pedidosGuardados by remember(context) {
-        mutableStateOf<List<PedidoLocal>>(
-            PedidoLocalStore.obtenerPedidos(context)
-        )
+    // ViewModel de pedidos. La pantalla solo observa los cambios.
+    val pedidosViewModel: PedidosViewModel = viewModel()
+    LaunchedEffect(context) {
+        pedidosViewModel.cargar(context)
     }
+    val pedidosGuardados = pedidosViewModel.pedidos
 
     // Adaptamos la entidad de Room al modelo de nuestras pantallas
 
@@ -94,14 +116,13 @@ fun DashboardScreen(
         mutableStateOf<ProductoCatalogo?>(null)
     }
 
-    // Carrito del cliente
-    val carrito = remember {
-        mutableStateMapOf<Int, Int>()
-    }
-
-    val productosCarrito = remember {
-        mutableStateMapOf<Int, ProductoCatalogo>()
-    }
+    // ViewModel separado para el carrito de cada cliente.
+    // La clave evita compartir el mismo carrito entre diferentes clientes.
+    val carritoViewModel: CarritoViewModel = viewModel(
+        key = "carrito_${clienteId ?: "administrador"}"
+    )
+    val carrito = carritoViewModel.cantidades
+    val productosCarrito = carritoViewModel.productos
 
     // Validar el carrito con los datos actuales de Room
     fun validarYActualizarCarrito(): String? {
@@ -151,16 +172,86 @@ fun DashboardScreen(
 
     // Navegación inferior
     val opciones = listOf(
-        "Inicio" to "🏠",
-        "Mapa" to "📍",
-        "QR" to "▣",
-        "Pedidos" to "📦",
-        "Perfil" to "👤"
+        "Inicio" to Icons.Filled.Home,
+        "Mapa" to Icons.Filled.Place,
+        "QR" to Icons.Filled.QrCodeScanner,
+        "Pedidos" to Icons.Filled.ReceiptLong,
+        "Perfil" to Icons.Filled.Person
     )
+
+    // La cantidad se obtiene del mismo ViewModel que utiliza CarritoScreen.
+    // Se actualiza automaticamente al agregar, modificar o quitar productos.
+    val unidadesEnCarrito = carrito.values.sum()
 
     Column(
         modifier = modifier.fillMaxSize()
     ) {
+
+        // ACCESO RAPIDO AL CARRITO - SOLO PARA CLIENTES.
+        // Ocupa una barra propia para no tapar las pantallas ni el mapa.
+        // No se muestra al confirmar un pedido ni dentro del carrito.
+        if (rol == "Cliente" && pantallaSeleccionada !in setOf(
+                "Carrito", "Confirmacion", "PedidoExito"
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Surface(
+                    onClick = { pantallaSeleccionada = "Carrito" },
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, VerdeOyl.copy(alpha = 0.25f)),
+                    shadowElevation = 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .heightIn(min = 44.dp)
+                            .padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(9.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ShoppingCart,
+                            contentDescription = null,
+                            tint = VerdeOyl,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "Mi carrito",
+                            color = VerdeOylOscuro,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        // Mostrar el total de unidades, incluso cuando esta vacio.
+                        Box(
+                            modifier = Modifier
+                                .defaultMinSize(minWidth = 23.dp, minHeight = 23.dp)
+                                .background(
+                                    if (unidadesEnCarrito > 0) VerdeOyl
+                                    else MaterialTheme.colorScheme.surfaceVariant,
+                                    CircleShape
+                                )
+                                .padding(horizontal = 5.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (unidadesEnCarrito > 99) "99+"
+                                    else unidadesEnCarrito.toString(),
+                                color = if (unidadesEnCarrito > 0) Color.White
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         Box(
             modifier = Modifier.weight(1f)
@@ -171,8 +262,12 @@ fun DashboardScreen(
                 // INICIO
                 "Inicio" -> {
 
-                    InicioDashboard(
+                    InicioDashboardOYL(
                         rol = rol,
+                        nombreCliente = clienteActual?.takeIf { it.id == clienteId }?.nombre.orEmpty(),
+                        productosDestacados = productosCatalogo,
+                        onAbrirMapa = { pantallaSeleccionada = "Mapa" },
+                        onAbrirQr = { pantallaSeleccionada = "QR" },
 
                         totalAvisos = pedidosGuardados.count {
                             it.estado == "Pendiente"
@@ -407,7 +502,11 @@ fun DashboardScreen(
                                 pantallaSeleccionada = "Notificaciones"
                             },
 
-                            onCerrarSesion = onCerrarSesion,
+                            onCerrarSesion = {
+                                carritoViewModel.vaciar()
+                                clienteViewModel.limpiarClienteActual()
+                                onCerrarSesion()
+                            },
 
                             modifier = Modifier.fillMaxSize()
                         )
@@ -415,10 +514,14 @@ fun DashboardScreen(
                     } else {
 
                         PerfilScreen(
-                            cliente = clienteActual,
+                            cliente = clienteActual?.takeIf { it.id == clienteId },
                             clienteViewModel = clienteViewModel,
                             modifier = Modifier.fillMaxSize(),
-                            onCerrarSesion = onCerrarSesion
+                            onCerrarSesion = {
+                                carritoViewModel.vaciar()
+                                clienteViewModel.limpiarClienteActual()
+                                onCerrarSesion()
+                            }
                         )
 
                     }
@@ -484,12 +587,11 @@ fun DashboardScreen(
 
                                 try {
 
-                                    pedidosGuardados =
-                                        PedidoLocalStore.actualizarEstado(
-                                            context = context,
-                                            numero = numero,
-                                            nuevoEstado = nuevoEstado
-                                        )
+                                    pedidosViewModel.actualizarEstado(
+                                        context = context,
+                                        numero = numero,
+                                        nuevoEstado = nuevoEstado
+                                    )
 
                                     onResultado(null)
 
@@ -552,19 +654,7 @@ fun DashboardScreen(
                             },
 
                             onAgregar = { cantidad ->
-
-                                val actual = carrito[producto.id] ?: 0
-
-                                val maximo = (
-                                        producto.stock - actual
-                                        ).coerceAtLeast(0)
-
-                                if (cantidad in 1..maximo) {
-
-                                    carrito[producto.id] = actual + cantidad
-
-                                    productosCarrito[producto.id] = producto
-                                }
+                                carritoViewModel.agregar(producto, cantidad)
                             },
 
                             modifier = Modifier.fillMaxSize()
@@ -584,36 +674,8 @@ fun DashboardScreen(
 
 
                         onCambiarCantidad = { id, nuevaCantidad ->
-
-                            val productoActual = productosCatalogo.firstOrNull {
-                                it.id == id
-                            }
-
-                            val cantidadAnterior = carrito[id] ?: 0
-
-                            if (nuevaCantidad <= 0) {
-
-                                // Eliminar del carrito
-                                carrito.remove(id)
-                                productosCarrito.remove(id)
-
-                            } else if (
-                                productoActual != null &&
-                                productoActual.activo &&
-                                (
-                                        nuevaCantidad < cantidadAnterior ||
-                                                nuevaCantidad <= productoActual.stock
-                                        )
-                            ) {
-
-                                // Permitir reducir la cantidad aunque
-                                // todavía supere el stock actualizado.
-                                // Para aumentar, respetar el stock real.
-                                carrito[id] = nuevaCantidad
-
-                                // Actualizar la copia del producto
-                                productosCarrito[id] = productoActual
-                            }
+                            val productoActual = productosCatalogo.firstOrNull { it.id == id }
+                            carritoViewModel.cambiarCantidad(productoActual, id, nuevaCantidad)
                         },
 
 
@@ -711,7 +773,7 @@ fun DashboardScreen(
                                         }
 
                                     // Guardar el pedido localmente
-                                    val pedido = PedidoLocalStore.registrarPedido(
+                                    val pedido = pedidosViewModel.registrar(
                                         context = context,
                                         clienteId = clienteId,
                                         nombreCliente = nombre,
@@ -721,17 +783,13 @@ fun DashboardScreen(
                                         productos = detallesPedido
                                     )
 
-                                    // Actualizar historial
-                                    pedidosGuardados = pedidosGuardados + pedido
-
                                     // Preparar la pantalla de éxito
                                     numeroPedidoDemo = pedido.numero
                                     totalPedidoDemo = pedido.total
                                     modalidadPedidoDemo = pedido.modalidad
 
-                                    // Vaciar carrito únicamente después de guardar
-                                    carrito.clear()
-                                    productosCarrito.clear()
+                                    // Vaciar solo despues de confirmar el guardado.
+                                    carritoViewModel.vaciar()
 
                                     // Mostrar confirmación animada
                                     pantallaSeleccionada = "PedidoExito"
@@ -817,7 +875,7 @@ fun DashboardScreen(
 
 
                     icon = {
-                        Text(icono)
+                        Icon(icono, contentDescription = nombre)
                     },
 
                     label = {
@@ -825,182 +883,6 @@ fun DashboardScreen(
                     }
                 )
             }
-        }
-    }
-}
-
-
-// DASHBOARD PRINCIPAL
-
-@Composable
-fun InicioDashboard(
-    rol: String,
-    onAbrirCatalogo: () -> Unit,
-    onAbrirCarrito: () -> Unit,
-    onVerMisPedidos: () -> Unit,
-    onGestionProductos: () -> Unit,
-    onGestionInventario: () -> Unit,
-    productosStockBajo: Int,
-    productosAgotados: Int,
-    onVerAlertasStock: () -> Unit,
-    pedidosPendientes: Int,
-    onVerPedidosPendientes: () -> Unit,
-    totalAvisos: Int,
-    onAbrirNotificaciones: () -> Unit
-) {
-
-
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-
-        Text(
-            text = "OYL Frutos Secos",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Text(
-            text = "Bienvenido, $rol"
-        )
-
-        if (rol == "Administrador") {
-
-            TarjetaDashboard(
-                titulo = "Notificaciones ($totalAvisos)",
-
-                descripcion = if (totalAvisos == 0) {
-                    "No tienes notificaciones activas."
-                } else {
-                    "Tienes $totalAvisos avisos de pedidos " +
-                            "e inventario. Pulsa para revisarlos."
-                },
-
-                onClick = onAbrirNotificaciones
-            )
-
-            TarjetaDashboard(
-                titulo = "Pedidos pendientes ($pedidosPendientes)",
-
-                descripcion = if (pedidosPendientes == 0) {
-                    "No tienes pedidos pendientes."
-                } else {
-                    "Tienes $pedidosPendientes pedidos esperando atención. " +
-                            "Pulsa para revisarlos."
-                },
-
-                onClick = onVerPedidosPendientes
-            )
-
-
-            val totalAlertas =
-                productosStockBajo + productosAgotados
-
-
-
-
-            TarjetaDashboard(
-                titulo = "Productos por reponer ($totalAlertas)",
-
-                descripcion = if (totalAlertas == 0) {
-
-                    "Sin alertas de stock."
-
-                } else {
-
-                    "$productosStockBajo con stock bajo " +
-                            "y $productosAgotados agotados. " +
-                            "Pulsa para consultar."
-                },
-
-                onClick = onVerAlertasStock
-            )
-
-            TarjetaDashboard(
-                titulo = "Gestionar productos",
-                descripcion = "Agregar y editar productos.",
-                onClick = onGestionProductos
-            )
-
-            TarjetaDashboard(
-                titulo = "Inventario",
-                descripcion = "Consultar existencias y alertas de stock.",
-                onClick = onGestionInventario
-            )
-
-        } else {
-
-            TarjetaDashboard(
-                titulo = "Productos destacados",
-                descripcion = "Descubre nuestros productos naturales.",
-                onClick = onAbrirCatalogo
-            )
-
-            TarjetaDashboard(
-                "Promociones",
-                "Revisa nuestras ofertas disponibles."
-            )
-
-            TarjetaDashboard(
-                titulo = "Mi carrito",
-                descripcion = "Consulta tus productos seleccionados.",
-                onClick = onAbrirCarrito
-            )
-
-            TarjetaDashboard(
-                titulo = "Mis pedidos",
-                descripcion = "Revisa tus compras.",
-                onClick = onVerMisPedidos
-            )
-        }
-    }
-}
-
-
-// COMPONENTE REUTILIZABLE PARA TARJETAS
-@Composable
-fun TarjetaDashboard(
-    titulo: String,
-    descripcion: String,
-    onClick: (() -> Unit)? = null
-) {
-
-    ElevatedCard(
-        modifier = if (onClick != null) {
-
-            Modifier
-                .fillMaxWidth()
-                .clickable {
-                    onClick()
-                }
-
-        } else {
-
-            Modifier.fillMaxWidth()
-        }
-    ) {
-
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-
-            Text(
-                text = titulo,
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            Text(
-                text = descripcion
-            )
         }
     }
 }

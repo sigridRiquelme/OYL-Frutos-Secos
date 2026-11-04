@@ -1,21 +1,28 @@
-
 package com.example.oylfrutossecos.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.text.NumberFormat
+import java.util.Locale
 
-// Producto utilizado por el catálogo y otras pantallas
+// Mantener este modelo para que Dashboard, Carrito y Detalle sigan funcionando.
 data class ProductoCatalogo(
     val id: Int,
     val nombre: String,
@@ -24,11 +31,12 @@ data class ProductoCatalogo(
     val stock: Int,
     val descripcion: String = "Producto natural de OYL Frutos Secos.",
     val presentacion: String = "Bolsa de 250 g",
-
-    // Fotografía y estado recuperados desde Room
     val imagenUri: String? = null,
     val activo: Boolean = true
 )
+
+fun precioOYL(valor: Int): String = "$" + NumberFormat
+    .getNumberInstance(Locale.forLanguageTag("es-CL")).format(valor)
 
 @Composable
 fun CatalogoScreen(
@@ -36,192 +44,88 @@ fun CatalogoScreen(
     modifier: Modifier = Modifier,
     onVerDetalle: (ProductoCatalogo) -> Unit = {}
 ) {
-
-    var busqueda by rememberSaveable {
-        mutableStateOf("")
+    var busqueda by rememberSaveable { mutableStateOf("") }
+    var categoria by rememberSaveable { mutableStateOf("Todos") }
+    val categorias = listOf("Todos", "Frutos secos", "Semillas", "Deshidratados")
+    val filtrados = productos.filter {
+        it.activo && it.nombre.contains(busqueda, ignoreCase = true) &&
+                (categoria == "Todos" || it.categoria == categoria)
     }
 
-    var categoriaSeleccionada by rememberSaveable {
-        mutableStateOf("Todos")
-    }
-
-    val categorias = listOf(
-        "Todos",
-        "Frutos secos",
-        "Semillas",
-        "Deshidratados"
-    )
-
-    // Mostrar solamente productos activos.
-    // Los desactivados siguen guardados en Room.
-    val productosFiltrados = productos.filter { producto ->
-
-        val coincideNombre = producto.nombre.contains(
-            busqueda,
-            ignoreCase = true
-        )
-
-        val coincideCategoria =
-            categoriaSeleccionada == "Todos" ||
-                    producto.categoria == categoriaSeleccionada
-
-        producto.activo &&
-                coincideNombre &&
-                coincideCategoria
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-
-        Text(
-            text = "Catálogo de productos",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // BUSCADOR
-        OutlinedTextField(
-            value = busqueda,
-
-            onValueChange = {
-                busqueda = it
-            },
-
-            label = {
-                Text("Buscar productos")
-            },
-
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // FILTROS POR CATEGORÍA
-        Row(
-            modifier = Modifier.horizontalScroll(
-                rememberScrollState()
-            ),
-
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-
-            categorias.forEach { categoria ->
-
-                FilterChip(
-                    selected = categoriaSeleccionada == categoria,
-
-                    onClick = {
-                        categoriaSeleccionada = categoria
-                    },
-
-                    label = {
-                        Text(categoria)
-                    }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "Productos encontrados: ${productosFiltrados.size}",
-            style = MaterialTheme.typography.bodyMedium
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // LISTADO DE PRODUCTOS
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-
-            if (productosFiltrados.isEmpty()) {
-
-                item {
-
-                    Text(
-                        text = "No se encontraron productos disponibles.",
-                        modifier = Modifier.padding(16.dp)
+    Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 16.dp)) {
+            Text("Nuestro catálogo", style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold)
+            Text("Frutos secos, semillas y más", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(14.dp))
+            OutlinedTextField(
+                value = busqueda,
+                onValueChange = { busqueda = it },
+                placeholder = { Text("Buscar productos…") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(15.dp)
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                categorias.forEach { nombre ->
+                    FilterChip(
+                        selected = categoria == nombre,
+                        onClick = { categoria = nombre },
+                        label = { Text(nombre) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = Color.White
+                        )
                     )
                 }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("${filtrados.size} productos", style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(8.dp))
 
-            } else {
-
-                items(
-                    items = productosFiltrados,
-                    key = { it.id }
-                ) { producto ->
-
-                    ElevatedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onVerDetalle(producto)
-                            }
-                    ) {
-
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-
-                            verticalArrangement =
-                                Arrangement.spacedBy(8.dp)
-                        ) {
-
-                            // FOTOGRAFÍA GUARDADA EN ROOM
-                            if (!producto.imagenUri.isNullOrBlank()) {
-
-                                ImagenProductoVistaPrevia(
-                                    imagenUri = producto.imagenUri,
-
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(170.dp)
-                                )
-                            }
-
-                            Text(
-                                text = producto.nombre,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-
-                            Text(
-                                text = "Categoría: ${producto.categoria}"
-                            )
-
-                            Text(
-                                text = "Presentación: ${producto.presentacion}"
-                            )
-
-                            Text(
-                                text = "Precio: $${producto.precio}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            Text(
-                                text = if (producto.stock == 0) {
-                                    "Sin existencias"
-                                } else {
-                                    "Stock disponible: ${producto.stock}"
-                                },
-
-                                color = if (producto.stock == 0) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                }
-                            )
-
-                            Text(
-                                text = "Toca para ver el detalle",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (filtrados.isEmpty()) {
+                item(span = { GridItemSpan(2) }) {
+                    Text("No encontramos productos con esos filtros.",
+                        modifier = Modifier.padding(24.dp))
+                }
+            }
+            items(filtrados, key = { it.id }) { producto ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable { onVerDetalle(producto) },
+                    shape = RoundedCornerShape(17.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    FotoProductoOYL(
+                        nombre = producto.nombre,
+                        imagenUri = producto.imagenUri,
+                        modifier = Modifier.fillMaxWidth().height(138.dp)
+                    )
+                    Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(producto.nombre, style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold, maxLines = 2,
+                            overflow = TextOverflow.Ellipsis, minLines = 2)
+                        Text(producto.presentacion, style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(precioOYL(producto.precio),
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.titleMedium)
+                        Text(if (producto.stock > 0) "En stock · ${producto.stock} un." else "Agotado",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (producto.stock > 0) Color(0xFF286B4A)
+                                    else MaterialTheme.colorScheme.error)
                     }
                 }
             }
