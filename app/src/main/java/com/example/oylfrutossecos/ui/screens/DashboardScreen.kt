@@ -43,6 +43,8 @@ import com.example.oylfrutossecos.data.local.PedidoLocal
 import com.example.oylfrutossecos.data.local.DetallePedidoLocal
 
 import com.example.oylfrutossecos.ui.validation.ValidadorCarrito
+import com.example.oylfrutossecos.feature.navegacion.domain.ReglasNavegacionDashboard
+import com.example.oylfrutossecos.ui.components.BarraNavegacionOYL
 
 @Composable
 fun DashboardScreen(
@@ -170,14 +172,6 @@ fun DashboardScreen(
         mutableStateOf("")
     }
 
-    // Navegación inferior
-    val opciones = listOf(
-        "Inicio" to Icons.Filled.Home,
-        "Mapa" to Icons.Filled.Place,
-        "QR" to Icons.Filled.QrCodeScanner,
-        "Pedidos" to Icons.Filled.ReceiptLong,
-        "Perfil" to Icons.Filled.Person
-    )
 
     // La cantidad se obtiene del mismo ViewModel que utiliza CarritoScreen.
     // Se actualiza automaticamente al agregar, modificar o quitar productos.
@@ -190,8 +184,10 @@ fun DashboardScreen(
         // ACCESO RAPIDO AL CARRITO - SOLO PARA CLIENTES.
         // Ocupa una barra propia para no tapar las pantallas ni el mapa.
         // No se muestra al confirmar un pedido ni dentro del carrito.
-        if (rol == "Cliente" && pantallaSeleccionada !in setOf(
-                "Carrito", "Confirmacion", "PedidoExito"
+        if (
+            ReglasNavegacionDashboard.mostrarAccesoCarrito(
+                rol = rol,
+                pantallaActual = pantallaSeleccionada
             )
         ) {
             Row(
@@ -850,39 +846,22 @@ fun DashboardScreen(
             }
         }
 
-        // BARRA DE NAVEGACIÓN INFERIOR
-        NavigationBar {
 
-            opciones.forEach { (nombre, icono) ->
+// Barra inferior modularizada
+        BarraNavegacionOYL(
+            pantallaActual = pantallaSeleccionada,
 
-                NavigationBarItem(
-                    selected =
-                        pantallaSeleccionada == nombre ||
-                                (
-                                        nombre == "Inicio" &&
-                                                pantallaSeleccionada == "Catalogo"
-                                        ),
+            onSeleccionar = { destino ->
 
+                // Al entrar a pedidos desde la barra,
+                // volver a mostrar todos los pedidos.
+                if (destino == "Pedidos") {
+                    filtroPedidosInicial = "Todos"
+                }
 
-                    onClick = {
-
-                        if (nombre == "Pedidos") {
-                            filtroPedidosInicial = "Todos"
-                        }
-
-                        pantallaSeleccionada = nombre
-                    },
-
-
-                    icon = {
-                        Icon(icono, contentDescription = nombre)
-                    },
-
-                    label = {
-                        Text(nombre)
-                    }
-                )
+                pantallaSeleccionada = destino
             }
-        }
+        )
+
     }
 }
