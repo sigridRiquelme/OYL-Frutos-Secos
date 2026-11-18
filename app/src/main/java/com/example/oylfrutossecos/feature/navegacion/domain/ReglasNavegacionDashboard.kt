@@ -34,4 +34,18 @@ object ReglasNavegacionDashboard {
             "PedidoExito"
         )
     }
+
+    // Formatear la cantidad que aparece
+    // en el acceso rápido al carrito.
+    fun etiquetaCantidadCarrito(
+        cantidad: Int
+    ): String {
+
+        return if (cantidad > 99) {
+            "99+"
+        } else {
+            cantidad.toString()
+        }
+    }
+
 }

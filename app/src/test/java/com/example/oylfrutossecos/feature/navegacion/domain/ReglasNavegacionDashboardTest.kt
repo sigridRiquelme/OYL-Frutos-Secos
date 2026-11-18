@@ -117,4 +117,42 @@ class ReglasNavegacionDashboardTest {
             "Invitado", "Inicio"
         ) shouldBe false
     }
+
+
+    // PRUEBA 14
+    @Test
+    fun carritoVacioMuestraCero() {
+        ReglasNavegacionDashboard
+            .etiquetaCantidadCarrito(0) shouldBe "0"
+    }
+
+    // PRUEBA 15
+    @Test
+    fun carritoConUnaUnidadMuestraUno() {
+        ReglasNavegacionDashboard
+            .etiquetaCantidadCarrito(1) shouldBe "1"
+    }
+
+    // PRUEBA 16
+    @Test
+    fun carritoCon99UnidadesMuestra99() {
+        ReglasNavegacionDashboard
+            .etiquetaCantidadCarrito(99) shouldBe "99"
+    }
+
+    // PRUEBA 17
+    @Test
+    fun carritoCon100UnidadesMuestra99Mas() {
+        ReglasNavegacionDashboard
+            .etiquetaCantidadCarrito(100) shouldBe "99+"
+    }
+
+    // PRUEBA 18
+    @Test
+    fun carritoConMuchasUnidadesMantiene99Mas() {
+        ReglasNavegacionDashboard
+            .etiquetaCantidadCarrito(500) shouldBe "99+"
+    }
+
 }
+

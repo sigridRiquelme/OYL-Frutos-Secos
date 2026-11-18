@@ -45,6 +45,7 @@ import com.example.oylfrutossecos.data.local.DetallePedidoLocal
 import com.example.oylfrutossecos.ui.validation.ValidadorCarrito
 import com.example.oylfrutossecos.feature.navegacion.domain.ReglasNavegacionDashboard
 import com.example.oylfrutossecos.ui.components.BarraNavegacionOYL
+import com.example.oylfrutossecos.ui.components.AccesoRapidoCarritoOYL
 
 @Composable
 fun DashboardScreen(
@@ -184,70 +185,27 @@ fun DashboardScreen(
         // ACCESO RAPIDO AL CARRITO - SOLO PARA CLIENTES.
         // Ocupa una barra propia para no tapar las pantallas ni el mapa.
         // No se muestra al confirmar un pedido ni dentro del carrito.
+
+        // ACCESO RAPIDO AL CARRITO - SOLO CLIENTES.
+        // La regla decide cuándo aparece.
+        // El componente se encarga del diseño.
         if (
             ReglasNavegacionDashboard.mostrarAccesoCarrito(
                 rol = rol,
                 pantallaActual = pantallaSeleccionada
             )
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Surface(
-                    onClick = { pantallaSeleccionada = "Carrito" },
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, VerdeOyl.copy(alpha = 0.25f)),
-                    shadowElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .heightIn(min = 44.dp)
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(9.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.ShoppingCart,
-                            contentDescription = null,
-                            tint = VerdeOyl,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Text(
-                            text = "Mi carrito",
-                            color = VerdeOylOscuro,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        // Mostrar el total de unidades, incluso cuando esta vacio.
-                        Box(
-                            modifier = Modifier
-                                .defaultMinSize(minWidth = 23.dp, minHeight = 23.dp)
-                                .background(
-                                    if (unidadesEnCarrito > 0) VerdeOyl
-                                    else MaterialTheme.colorScheme.surfaceVariant,
-                                    CircleShape
-                                )
-                                .padding(horizontal = 5.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (unidadesEnCarrito > 99) "99+"
-                                    else unidadesEnCarrito.toString(),
-                                color = if (unidadesEnCarrito > 0) Color.White
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+
+            AccesoRapidoCarritoOYL(
+                unidadesEnCarrito = unidadesEnCarrito,
+
+                onAbrirCarrito = {
+                    pantallaSeleccionada = "Carrito"
                 }
-            }
+            )
         }
+
+
 
         Box(
             modifier = Modifier.weight(1f)
