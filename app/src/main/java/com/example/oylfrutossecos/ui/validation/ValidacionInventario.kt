@@ -1,21 +1,13 @@
 
 package com.example.oylfrutossecos.ui.validation
 
+import com.example.oylfrutossecos.feature.inventario.domain.ReglasAjusteInventario
+
 object ValidadorInventario {
 
     fun validarCantidad(cantidadTexto: String): String? {
-
-        val cantidad = cantidadTexto.trim().toIntOrNull()
-
-        if (cantidad == null) {
-            return "Ingresa una cantidad entera válida"
-        }
-
-        if (cantidad <= 0) {
-            return "La cantidad debe ser mayor que cero"
-        }
-
-        // null significa que no existen errores
-        return null
+        return ReglasAjusteInventario.validarCantidad(
+            cantidadTexto
+        )
     }
 }

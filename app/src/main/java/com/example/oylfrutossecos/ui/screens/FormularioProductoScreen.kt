@@ -15,8 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
-import com.example.oylfrutossecos.ui.validation.DatosNuevoProducto
-import com.example.oylfrutossecos.ui.validation.ValidadorProducto
+import com.example.oylfrutossecos.feature.productos.domain.DatosNuevoProducto
+import com.example.oylfrutossecos.feature.productos.domain.ValidadorProducto
 
 @Composable
 fun FormularioProductoScreen(

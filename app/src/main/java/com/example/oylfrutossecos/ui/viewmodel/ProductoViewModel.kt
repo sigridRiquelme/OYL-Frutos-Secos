@@ -9,13 +9,12 @@ import com.example.oylfrutossecos.data.local.entity.ProductoEntity
 import com.example.oylfrutossecos.data.repository.ProductoRepository
 import com.example.oylfrutossecos.ui.validation.DatosNuevoProducto
 import com.example.oylfrutossecos.ui.validation.ValidadorProducto
-import com.example.oylfrutossecos.ui.validation.ValidadorInventario
 
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
+import com.example.oylfrutossecos.feature.inventario.domain.ReglasAjusteInventario
 class ProductoViewModel(
     private val repository: ProductoRepository
 ) : ViewModel() {
@@ -129,9 +128,10 @@ class ProductoViewModel(
         onResultado: (String?) -> Unit
     ) {
 
-        // Validación independiente de la pantalla
+
+        // Validar la cantidad desde el módulo de inventario
         val errorValidacion =
-            ValidadorInventario.validarCantidad(
+            ReglasAjusteInventario.validarCantidad(
                 cantidadTexto
             )
 
@@ -140,14 +140,16 @@ class ProductoViewModel(
             return
         }
 
+        // La cantidad ya fue validada
         val cantidad = cantidadTexto.trim().toInt()
 
-        // Entrada suma; salida resta
-        val variacion = if (esEntrada) {
-            cantidad
-        } else {
-            -cantidad
-        }
+        // Entrada suma, salida resta
+        val variacion =
+            ReglasAjusteInventario.calcularVariacion(
+                cantidad = cantidad,
+                esEntrada = esEntrada
+            )
+
 
         viewModelScope.launch {
 

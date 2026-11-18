@@ -12,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
+import com.example.oylfrutossecos.feature.pedidos.domain.ReglasEstadoPedido
 import com.example.oylfrutossecos.data.local.PedidoLocal
 
 import java.text.SimpleDateFormat
@@ -37,28 +37,17 @@ private fun formatoFecha(fecha: Long): String {
 }
 
 // Opciones permitidas para cambiar el estado
+
 private fun estadosSiguientes(
     pedido: PedidoLocal
 ): List<String> {
 
-    return when (pedido.estado) {
-
-        "Pendiente" ->
-            listOf("En preparación", "Cancelado")
-
-        "En preparación" ->
-            if (pedido.modalidad == "Retiro") {
-                listOf("Listo para retiro", "Cancelado")
-            } else {
-                listOf("En despacho", "Cancelado")
-            }
-
-        "Listo para retiro", "En despacho" ->
-            listOf("Entregado")
-
-        else -> emptyList()
-    }
+    return ReglasEstadoPedido.estadosSiguientes(
+        estadoActual = pedido.estado,
+        modalidad = pedido.modalidad
+    )
 }
+
 
 @Composable
 fun GestionPedidosScreen(

@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.EstadoRegistro
+import com.example.oylfrutossecos.feature.autenticacion.domain.ValidadorRegistro
+import com.example.oylfrutossecos.feature.autenticacion.platform.ValidadorCorreoAndroid
 
 @Composable
 fun RegistroScreen(
@@ -41,12 +43,23 @@ fun RegistroScreen(
         }
     }
 
-    val nombreInvalido = nombre.trim().length < 3
-    val nombreUsuarioInvalido = nombreUsuario.trim().length < 3
-    val correoInvalido = !android.util.Patterns
-        .EMAIL_ADDRESS.matcher(correo).matches()
-    val telefonoInvalido = telefono.count { it.isDigit() } < 9
-    val contrasenaInvalida = contrasena.length < 6
+
+    // Validaciones centralizadas
+    val nombreInvalido =
+        !ValidadorRegistro.esNombreValido(nombre)
+
+    val nombreUsuarioInvalido =
+        !ValidadorRegistro.esUsuarioValido(nombreUsuario)
+
+    val correoInvalido =
+        !ValidadorCorreoAndroid.esValido(correo)
+
+    val telefonoInvalido =
+        !ValidadorRegistro.esTelefonoValido(telefono)
+
+    val contrasenaInvalida =
+        !ValidadorRegistro.esContrasenaValida(contrasena)
+
 
     Column(
         modifier = modifier

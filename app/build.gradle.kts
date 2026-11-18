@@ -74,4 +74,21 @@ dependencies {
     // Fotografías de productos con Coil 3
     implementation("io.coil-kt.coil3:coil-compose:3.4.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
+
+
+    // Kotest: aserciones más legibles
+    testImplementation(
+        "io.kotest:kotest-assertions-core:5.9.1"
+    )
+
+    // MockK: simulación de dependencias
+    testImplementation(
+        "io.mockk:mockk:1.14.5"
+    )
+
+    // Pruebas de corrutinas
+    testImplementation(
+        "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2"
+    )
+
 }

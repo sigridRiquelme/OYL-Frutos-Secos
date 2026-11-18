@@ -3,28 +3,16 @@ package com.example.oylfrutossecos.data.local
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import com.example.oylfrutossecos.feature.pedidos.domain.ReglasEstadoPedido
+import com.example.oylfrutossecos.feature.pedidos.domain.ReglasCreacionPedido
 
 // Un producto incluido en una compra
-data class DetallePedidoLocal(
-    val idProducto: Int,
-    val nombre: String,
-    val cantidad: Int,
-    val precioUnitario: Int
-)
+typealias DetallePedidoLocal =
+        com.example.oylfrutossecos.data.model.DetallePedido
 
 // Información de un pedido (con clienteId para separar historiales)
-data class PedidoLocal(
-    val numero: String,
-    val fecha: Long,
-    val clienteId: Int?,
-    val nombreCliente: String,
-    val telefono: String,
-    val modalidad: String,
-    val direccion: String,
-    val productos: List<DetallePedidoLocal>,
-    val total: Int,
-    val estado: String = "Pendiente"
-)
+typealias PedidoLocal =
+        com.example.oylfrutossecos.data.model.Pedido
 
 // Almacenamiento privado del dispositivo
 object PedidoLocalStore {
@@ -91,15 +79,10 @@ object PedidoLocalStore {
         productos: List<DetallePedidoLocal>
     ): PedidoLocal {
 
-        require(productos.isNotEmpty()) {
-            "El pedido debe contener productos."
-        }
 
-        require(productos.all {
-            it.cantidad > 0 && it.precioUnitario >= 0
-        }) {
-            "Las cantidades y los precios deben ser válidos."
-        }
+        val totalCalculado =
+            ReglasCreacionPedido.calcularTotal(productos)
+
 
         require(modalidad == "Retiro" || modalidad == "Despacho") {
             "Modalidad de entrega no válida."
@@ -109,9 +92,6 @@ object PedidoLocalStore {
         val siguienteNumero =
             prefs.getInt(CLAVE_CONTADOR, 0) + 1
 
-        val totalCalculado = productos.sumOf {
-            it.precioUnitario * it.cantidad
-        }
 
         val pedido = PedidoLocal(
             numero = "OYL-P-" +
@@ -154,42 +134,32 @@ object PedidoLocalStore {
 
         val pedidos = obtenerPedidos(context)
 
+
         val pedidoActual = pedidos.firstOrNull {
             it.numero == numero
         } ?: throw IllegalArgumentException(
             "El pedido no existe."
         )
 
-        val estadosPermitidos = when (pedidoActual.estado) {
-
-            "Pendiente" ->
-                setOf("En preparación", "Cancelado")
-
-            "En preparación" ->
-                if (pedidoActual.modalidad == "Retiro") {
-                    setOf("Listo para retiro", "Cancelado")
-                } else {
-                    setOf("En despacho", "Cancelado")
-                }
-
-            "Listo para retiro", "En despacho" ->
-                setOf("Entregado")
-
-            else -> emptySet()
-        }
-
-        require(nuevoEstado in estadosPermitidos) {
+// Validar mediante las reglas centralizadas
+        require(
+            ReglasEstadoPedido.puedeCambiarEstado(
+                estadoActual = pedidoActual.estado,
+                nuevoEstado = nuevoEstado,
+                modalidad = pedidoActual.modalidad
+            )
+        ) {
             "El cambio de estado no está permitido."
         }
 
         val actualizados = pedidos.map { pedido ->
-
             if (pedido.numero == numero) {
                 pedido.copy(estado = nuevoEstado)
             } else {
                 pedido
             }
         }
+
 
         val guardado = preferencias(context).edit()
             .putString(

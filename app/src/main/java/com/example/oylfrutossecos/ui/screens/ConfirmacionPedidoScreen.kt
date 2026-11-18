@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.oylfrutossecos.feature.pedidos.domain.ValidadorPedido
 
 @Composable
 fun ConfirmacionPedidoScreen(
@@ -49,15 +50,20 @@ fun ConfirmacionPedidoScreen(
         mutableStateOf(false)
     }
 
-    // Validaciones
-    val nombreValido = nombre.trim().length >= 3
+
+    // Validaciones centralizadas
+    val nombreValido =
+        ValidadorPedido.esNombreValido(nombre)
 
     val telefonoValido =
-        telefono.count { it.isDigit() } >= 9
+        ValidadorPedido.esTelefonoValido(telefono)
 
     val direccionValida =
-        modalidad == "Retiro" ||
-                direccion.trim().length >= 10
+        ValidadorPedido.esDireccionValida(
+            modalidad,
+            direccion
+        )
+
 
     Column(
         modifier = modifier
@@ -198,12 +204,17 @@ fun ConfirmacionPedidoScreen(
 
                 mostrarErrores = true
 
+
                 if (
-                    nombreValido &&
-                    telefonoValido &&
-                    direccionValida &&
-                    productosPedido.isNotEmpty()
+                    ValidadorPedido.puedeConfirmar(
+                        nombre = nombre,
+                        telefono = telefono,
+                        modalidad = modalidad,
+                        direccion = direccion,
+                        tieneProductos = productosPedido.isNotEmpty()
+                    )
                 ) {
+
 
                     onConfirmar(
                         nombre.trim(),
