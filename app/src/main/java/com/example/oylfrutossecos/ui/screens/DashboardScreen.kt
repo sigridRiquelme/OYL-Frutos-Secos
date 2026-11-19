@@ -47,6 +47,8 @@ import com.example.oylfrutossecos.feature.navegacion.domain.ReglasNavegacionDash
 import com.example.oylfrutossecos.ui.components.BarraNavegacionOYL
 import com.example.oylfrutossecos.ui.components.AccesoRapidoCarritoOYL
 import com.example.oylfrutossecos.feature.pedidos.domain.PreparadorDetallesPedido
+import com.example.oylfrutossecos.feature.pedidos.domain.CoordinadorOperacionesPedido
+import com.example.oylfrutossecos.feature.pedidos.domain.ResultadoConfirmacionPedido
 
 @Composable
 fun DashboardScreen(
@@ -535,28 +537,22 @@ fun DashboardScreen(
                                 pantallaSeleccionada = "Inicio"
                             },
 
-                            onCambiarEstado = {
-                                    numero,
-                                    nuevoEstado,
-                                    onResultado ->
 
-                                try {
+                            onCambiarEstado = { numero, nuevoEstado, onResultado ->
 
-                                    pedidosViewModel.actualizarEstado(
-                                        context = context,
-                                        numero = numero,
-                                        nuevoEstado = nuevoEstado
-                                    )
+                                val mensajeError = CoordinadorOperacionesPedido
+                                    .cambiarEstado {
 
-                                    onResultado(null)
+                                        pedidosViewModel.actualizarEstado(
+                                            context = context,
+                                            numero = numero,
+                                            nuevoEstado = nuevoEstado
+                                        )
+                                    }
 
-                                } catch (error: Exception) {
-
-                                    onResultado(
-                                        "No se pudo actualizar el estado del pedido."
-                                    )
-                                }
+                                onResultado(mensajeError)
                             },
+
 
                             modifier = Modifier.fillMaxSize()
                         )
@@ -677,65 +673,66 @@ fun DashboardScreen(
                         },
 
 
-                        onConfirmar = {
-                                nombre,
-                                telefono,
-                                modalidad,
-                                direccion ->
 
-                            // Verificar nuevamente el carrito
-                            // justo antes de registrar la solicitud
-                            val errorValidacion = validarYActualizarCarrito()
+                        onConfirmar = { nombre, telefono, modalidad, direccion ->
 
-                            if (errorValidacion != null) {
+                            val resultado = CoordinadorOperacionesPedido.confirmar(
 
-                                // Avisar al Cliente qué cambió
-                                Toast.makeText(
-                                    context,
-                                    errorValidacion,
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                validarCarrito = {
+                                    validarYActualizarCarrito()
+                                },
 
-                                // Regresar al carrito para corregirlo
-                                // sin eliminar sus productos
-                                pantallaSeleccionada = "Carrito"
+                                productos = productosCarrito.values.toList(),
 
-                            } else {
+                                cantidades = carrito.toMap(),
 
-                                // Solo registrar si la validación fue exitosa
-                                try {
+                                registrar = { detalles ->
 
-// Preparar los detalles desde el módulo de pedidos
-                                    val detallesPedido = PreparadorDetallesPedido.desdeCarrito(
-                                        productos = productosCarrito.values.toList(),
-                                        cantidades = carrito.toMap()
-                                    )
-
-                                    // Guardar el pedido localmente
-                                    val pedido = pedidosViewModel.registrar(
+                                    pedidosViewModel.registrar(
                                         context = context,
                                         clienteId = clienteId,
                                         nombreCliente = nombre,
                                         telefono = telefono,
                                         modalidad = modalidad,
                                         direccion = direccion,
-                                        productos = detallesPedido
+                                        productos = detalles
                                     )
+                                }
+                            )
 
-                                    // Preparar la pantalla de éxito
+                            when (resultado) {
+
+                                is ResultadoConfirmacionPedido.CarritoInvalido -> {
+
+                                    // Avisar al cliente y permitir que corrija
+                                    // los productos sin vaciar su carrito.
+                                    Toast.makeText(
+                                        context,
+                                        resultado.mensaje,
+                                        Toast.LENGTH_LONG
+                                    ).show()
+
+                                    pantallaSeleccionada = "Carrito"
+                                }
+
+                                is ResultadoConfirmacionPedido.Registrado -> {
+
+                                    val pedido = resultado.pedido
+
+                                    // Preparar los datos de la pantalla de éxito.
                                     numeroPedidoDemo = pedido.numero
                                     totalPedidoDemo = pedido.total
                                     modalidadPedidoDemo = pedido.modalidad
 
-                                    // Vaciar solo despues de confirmar el guardado.
+                                    // Vaciar únicamente después del registro exitoso.
                                     carritoViewModel.vaciar()
 
-                                    // Mostrar confirmación animada
                                     pantallaSeleccionada = "PedidoExito"
+                                }
 
-                                } catch (error: Exception) {
+                                ResultadoConfirmacionPedido.ErrorGuardado -> {
 
-                                    // Si falla el guardado, conservar el carrito
+                                    // Conservar el carrito si el registro falló.
                                     Toast.makeText(
                                         context,
                                         "No se pudo guardar el pedido. " +
@@ -745,7 +742,6 @@ fun DashboardScreen(
                                 }
                             }
                         },
-
 
                         modifier = Modifier.fillMaxSize()
                     )
