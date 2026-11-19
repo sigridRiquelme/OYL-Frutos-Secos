@@ -49,6 +49,7 @@ import com.example.oylfrutossecos.ui.components.AccesoRapidoCarritoOYL
 import com.example.oylfrutossecos.feature.pedidos.domain.PreparadorDetallesPedido
 import com.example.oylfrutossecos.feature.pedidos.domain.CoordinadorOperacionesPedido
 import com.example.oylfrutossecos.feature.pedidos.domain.ResultadoConfirmacionPedido
+import com.example.oylfrutossecos.feature.carrito.domain.CoordinadorRevisionCarrito
 
 @Composable
 fun DashboardScreen(
@@ -130,38 +131,40 @@ fun DashboardScreen(
     val carrito = carritoViewModel.cantidades
     val productosCarrito = carritoViewModel.productos
 
-    // Validar el carrito con los datos actuales de Room
+
+    // Revisar el carrito utilizando el coordinador.
     fun validarYActualizarCarrito(): String? {
 
-        val error = ValidadorCarrito.validar(
+        val resultado = CoordinadorRevisionCarrito.revisar(
+
             cantidades = carrito.toMap(),
 
-            preciosCarrito = productosCarrito.mapValues { (_, producto) ->
-                producto.precio
-            },
+            productosGuardados = productosCarrito.toMap(),
 
-            productosActuales = productosRoom
+            productosActuales = productosCatalogo,
+
+            validar = { cantidades, preciosOriginales ->
+
+                ValidadorCarrito.validar(
+                    cantidades = cantidades,
+                    preciosCarrito = preciosOriginales,
+                    productosActuales = productosRoom
+                )
+            }
         )
 
-        // Si algo cambió, actualizar la información visual
-        // del carrito para que el Cliente pueda corregirlo.
-        if (error != null) {
+        // Si hubo cambios, actualizar los datos
+        // visuales sin eliminar los productos.
+        if (resultado.error != null) {
 
-            val productosActuales = productosCatalogo.associateBy {
-                it.id
-            }
-
-            carrito.keys.toList().forEach { id ->
-
-                productosActuales[id]?.let { productoActual ->
-
-                    productosCarrito[id] = productoActual
-                }
-            }
+            productosCarrito.putAll(
+                resultado.productosActualizados
+            )
         }
 
-        return error
+        return resultado.error
     }
+
 
     // Información para la pantalla de pedido exitoso
     var numeroPedidoDemo by rememberSaveable {
