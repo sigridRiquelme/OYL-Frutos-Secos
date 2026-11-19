@@ -50,6 +50,7 @@ import com.example.oylfrutossecos.feature.pedidos.domain.PreparadorDetallesPedid
 import com.example.oylfrutossecos.feature.pedidos.domain.CoordinadorOperacionesPedido
 import com.example.oylfrutossecos.feature.pedidos.domain.ResultadoConfirmacionPedido
 import com.example.oylfrutossecos.feature.carrito.domain.CoordinadorRevisionCarrito
+import com.example.oylfrutossecos.feature.administracion.domain.CalculadoraResumenAdministrativo
 
 @Composable
 fun DashboardScreen(
@@ -184,6 +185,14 @@ fun DashboardScreen(
     // Se actualiza automaticamente al agregar, modificar o quitar productos.
     val unidadesEnCarrito = carrito.values.sum()
 
+// Resumen calculado desde el módulo administrativo.
+    val resumenAdministrativo =
+        CalculadoraResumenAdministrativo.calcular(
+            productos = productosCatalogo,
+            pedidos = pedidosGuardados
+        )
+
+
     Column(
         modifier = modifier.fillMaxSize()
     ) {
@@ -229,20 +238,14 @@ fun DashboardScreen(
                         onAbrirMapa = { pantallaSeleccionada = "Mapa" },
                         onAbrirQr = { pantallaSeleccionada = "QR" },
 
-                        totalAvisos = pedidosGuardados.count {
-                            it.estado == "Pendiente"
-                        } + productosRoom.count {
-                            it.activo && it.stock in 0..10
-                        },
+                        totalAvisos = resumenAdministrativo.totalAvisos,
 
                         onAbrirNotificaciones = {
                             pantallaSeleccionada = "Notificaciones"
                         },
 
 
-                        pedidosPendientes = pedidosGuardados.count {
-                            it.estado == "Pendiente"
-                        },
+                        pedidosPendientes = resumenAdministrativo.pedidosPendientes,
 
                         onVerPedidosPendientes = {
                             filtroPedidosInicial = "Pendiente"
@@ -250,13 +253,9 @@ fun DashboardScreen(
                         },
 
 
-                        productosStockBajo = productosRoom.count {
-                            it.activo && it.stock in 1..10
-                        },
+                        productosStockBajo = resumenAdministrativo.productosStockBajo,
 
-                        productosAgotados = productosRoom.count {
-                            it.activo && it.stock == 0
-                        },
+                        productosAgotados = resumenAdministrativo.productosAgotados,
 
                         onVerAlertasStock = {
                             idProductoDesdeQR = null
@@ -425,19 +424,15 @@ fun DashboardScreen(
 
                         PerfilAdministradorScreen(
 
-                            productosActivos = productosRoom.count {
-                                it.activo
-                            },
 
-                            alertasStock = productosRoom.count {
-                                it.activo && it.stock in 0..10
-                            },
+                            productosActivos = resumenAdministrativo.productosActivos,
 
-                            pedidosPendientes = pedidosGuardados.count {
-                                it.estado == "Pendiente"
-                            },
+                            alertasStock = resumenAdministrativo.alertasStock,
 
-                            pedidosRegistrados = pedidosGuardados.size,
+                            pedidosPendientes = resumenAdministrativo.pedidosPendientes,
+
+                            pedidosRegistrados = resumenAdministrativo.pedidosRegistrados,
+
 
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"
