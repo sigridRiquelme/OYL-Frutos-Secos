@@ -1,56 +1,37 @@
+
 package com.example.oylfrutossecos.ui.screens
 
 import android.widget.Toast
-
-import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.oylfrutossecos.ui.viewmodel.CarritoViewModel
-import com.example.oylfrutossecos.ui.viewmodel.PedidosViewModel
-import com.example.oylfrutossecos.ui.components.ProductoImagen
-import com.example.oylfrutossecos.ui.theme.VerdeOyl
-import com.example.oylfrutossecos.ui.theme.VerdeOylOscuro
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
+import com.example.oylfrutossecos.ui.viewmodel.CarritoViewModel
+import com.example.oylfrutossecos.ui.viewmodel.PedidosViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModel
-import com.example.oylfrutossecos.data.local.PedidoLocalStore
-import com.example.oylfrutossecos.data.local.PedidoLocal
-import com.example.oylfrutossecos.data.local.DetallePedidoLocal
 
 import com.example.oylfrutossecos.ui.validation.ValidadorCarrito
-import com.example.oylfrutossecos.feature.navegacion.domain.ReglasNavegacionDashboard
-import com.example.oylfrutossecos.ui.components.BarraNavegacionOYL
-import com.example.oylfrutossecos.ui.components.AccesoRapidoCarritoOYL
-import com.example.oylfrutossecos.feature.pedidos.domain.PreparadorDetallesPedido
+
+import com.example.oylfrutossecos.feature.carrito.domain.CoordinadorRevisionCarrito
+
 import com.example.oylfrutossecos.feature.pedidos.domain.CoordinadorOperacionesPedido
 import com.example.oylfrutossecos.feature.pedidos.domain.ResultadoConfirmacionPedido
-import com.example.oylfrutossecos.feature.carrito.domain.CoordinadorRevisionCarrito
+
 import com.example.oylfrutossecos.feature.administracion.domain.CalculadoraResumenAdministrativo
+
+import com.example.oylfrutossecos.feature.navegacion.domain.ReglasNavegacionDashboard
+import com.example.oylfrutossecos.feature.navegacion.domain.AccionCliente
+import com.example.oylfrutossecos.feature.navegacion.domain.NavegacionCliente
+
+import com.example.oylfrutossecos.ui.components.BarraNavegacionOYL
+import com.example.oylfrutossecos.ui.components.AccesoRapidoCarritoOYL
+import com.example.oylfrutossecos.ui.components.PantallasExploracionCliente
 
 @Composable
 fun DashboardScreen(
@@ -62,31 +43,32 @@ fun DashboardScreen(
     onCerrarSesion: () -> Unit
 ) {
 
-
-    // Datos del cliente autenticado
+    // DATOS DEL CLIENTE AUTENTICADO
     LaunchedEffect(rol, clienteId) {
         if (rol == "Cliente" && clienteId != null) {
             clienteViewModel.cargarCliente(clienteId)
         }
     }
+
     val clienteActual by clienteViewModel.clienteActual.collectAsState()
 
-    // Productos observados desde Room mediante MVVM
+    // PRODUCTOS OBTENIDOS DESDE ROOM
     val productosRoom by productoViewModel.productos.collectAsState()
 
-    // Acceso al almacenamiento del dispositivo
     val context = LocalContext.current
 
-    // ViewModel de pedidos. La pantalla solo observa los cambios.
+    // PEDIDOS
     val pedidosViewModel: PedidosViewModel = viewModel()
+
     LaunchedEffect(context) {
         pedidosViewModel.cargar(context)
     }
+
     val pedidosGuardados = pedidosViewModel.pedidos
 
-    // Adaptamos la entidad de Room al modelo de nuestras pantallas
-
+    // ADAPTAR PRODUCTOS DE ROOM AL CATALOGO
     val productosCatalogo = productosRoom.map { producto ->
+
         ProductoCatalogo(
             id = producto.id,
             nombre = producto.nombre,
@@ -95,19 +77,16 @@ fun DashboardScreen(
             stock = producto.stock,
             descripcion = producto.descripcion,
             presentacion = producto.presentacion,
-
-            // Datos adicionales recuperados de Room
             imagenUri = producto.imagenUri,
             activo = producto.activo
         )
     }
 
-
+    // ESTADOS DE NAVEGACION
     var pantallaSeleccionada by rememberSaveable {
         mutableStateOf("Inicio")
     }
 
-    // Producto que llega desde el escáner QR
     var idProductoDesdeQR by rememberSaveable {
         mutableStateOf<Int?>(null)
     }
@@ -124,24 +103,20 @@ fun DashboardScreen(
         mutableStateOf<ProductoCatalogo?>(null)
     }
 
-    // ViewModel separado para el carrito de cada cliente.
-    // La clave evita compartir el mismo carrito entre diferentes clientes.
+    // CARRITO ASOCIADO AL CLIENTE
     val carritoViewModel: CarritoViewModel = viewModel(
         key = "carrito_${clienteId ?: "administrador"}"
     )
+
     val carrito = carritoViewModel.cantidades
     val productosCarrito = carritoViewModel.productos
 
-
-    // Revisar el carrito utilizando el coordinador.
+    // VALIDAR Y ACTUALIZAR EL CARRITO
     fun validarYActualizarCarrito(): String? {
 
         val resultado = CoordinadorRevisionCarrito.revisar(
-
             cantidades = carrito.toMap(),
-
             productosGuardados = productosCarrito.toMap(),
-
             productosActuales = productosCatalogo,
 
             validar = { cantidades, preciosOriginales ->
@@ -154,10 +129,7 @@ fun DashboardScreen(
             }
         )
 
-        // Si hubo cambios, actualizar los datos
-        // visuales sin eliminar los productos.
         if (resultado.error != null) {
-
             productosCarrito.putAll(
                 resultado.productosActualizados
             )
@@ -166,8 +138,7 @@ fun DashboardScreen(
         return resultado.error
     }
 
-
-    // Información para la pantalla de pedido exitoso
+    // INFORMACION DEL PEDIDO EXITOSO
     var numeroPedidoDemo by rememberSaveable {
         mutableStateOf("")
     }
@@ -180,30 +151,22 @@ fun DashboardScreen(
         mutableStateOf("")
     }
 
-
-    // La cantidad se obtiene del mismo ViewModel que utiliza CarritoScreen.
-    // Se actualiza automaticamente al agregar, modificar o quitar productos.
+    // TOTAL DE UNIDADES DEL CARRITO
     val unidadesEnCarrito = carrito.values.sum()
 
-// Resumen calculado desde el módulo administrativo.
+    // RESUMEN ADMINISTRATIVO MODULARIZADO
     val resumenAdministrativo =
         CalculadoraResumenAdministrativo.calcular(
             productos = productosCatalogo,
             pedidos = pedidosGuardados
         )
 
-
+    // CONTENEDOR PRINCIPAL
     Column(
         modifier = modifier.fillMaxSize()
     ) {
 
-        // ACCESO RAPIDO AL CARRITO - SOLO PARA CLIENTES.
-        // Ocupa una barra propia para no tapar las pantallas ni el mapa.
-        // No se muestra al confirmar un pedido ni dentro del carrito.
-
-        // ACCESO RAPIDO AL CARRITO - SOLO CLIENTES.
-        // La regla decide cuándo aparece.
-        // El componente se encarga del diseño.
+        // ACCESO RAPIDO AL CARRITO
         if (
             ReglasNavegacionDashboard.mostrarAccesoCarrito(
                 rol = rol,
@@ -220,8 +183,7 @@ fun DashboardScreen(
             )
         }
 
-
-
+        // CONTENIDO DE LAS PANTALLAS
         Box(
             modifier = Modifier.weight(1f)
         ) {
@@ -233,10 +195,21 @@ fun DashboardScreen(
 
                     InicioDashboardOYL(
                         rol = rol,
-                        nombreCliente = clienteActual?.takeIf { it.id == clienteId }?.nombre.orEmpty(),
+
+                        nombreCliente = clienteActual
+                            ?.takeIf { it.id == clienteId }
+                            ?.nombre
+                            .orEmpty(),
+
                         productosDestacados = productosCatalogo,
-                        onAbrirMapa = { pantallaSeleccionada = "Mapa" },
-                        onAbrirQr = { pantallaSeleccionada = "QR" },
+
+                        onAbrirMapa = {
+                            pantallaSeleccionada = "Mapa"
+                        },
+
+                        onAbrirQr = {
+                            pantallaSeleccionada = "QR"
+                        },
 
                         totalAvisos = resumenAdministrativo.totalAvisos,
 
@@ -244,18 +217,19 @@ fun DashboardScreen(
                             pantallaSeleccionada = "Notificaciones"
                         },
 
-
-                        pedidosPendientes = resumenAdministrativo.pedidosPendientes,
+                        pedidosPendientes =
+                            resumenAdministrativo.pedidosPendientes,
 
                         onVerPedidosPendientes = {
                             filtroPedidosInicial = "Pendiente"
                             pantallaSeleccionada = "Pedidos"
                         },
 
+                        productosStockBajo =
+                            resumenAdministrativo.productosStockBajo,
 
-                        productosStockBajo = resumenAdministrativo.productosStockBajo,
-
-                        productosAgotados = resumenAdministrativo.productosAgotados,
+                        productosAgotados =
+                            resumenAdministrativo.productosAgotados,
 
                         onVerAlertasStock = {
                             idProductoDesdeQR = null
@@ -263,12 +237,23 @@ fun DashboardScreen(
                             pantallaSeleccionada = "GestionInventario"
                         },
 
+                        // NAVEGACION MODULARIZADA
                         onAbrirCatalogo = {
-                            pantallaSeleccionada = "Catalogo"
+
+                            pantallaSeleccionada =
+                                NavegacionCliente.siguientePantalla(
+                                    pantallaSeleccionada,
+                                    AccionCliente.ABRIR_CATALOGO
+                                )
                         },
 
                         onAbrirCarrito = {
-                            pantallaSeleccionada = "Carrito"
+
+                            pantallaSeleccionada =
+                                NavegacionCliente.siguientePantalla(
+                                    pantallaSeleccionada,
+                                    AccionCliente.ABRIR_CARRITO
+                                )
                         },
 
                         onVerMisPedidos = {
@@ -295,7 +280,7 @@ fun DashboardScreen(
                     )
                 }
 
-                // ESCÁNER QR
+                // ESCANER QR
                 "QR" -> {
 
                     val estadosProductos = productosRoom.associate {
@@ -304,14 +289,18 @@ fun DashboardScreen(
 
                     QRScreen(
                         productos = productosCatalogo,
-
                         estadosProductos = estadosProductos,
-
                         rol = rol,
 
                         onVerProducto = { producto ->
+
                             productoSeleccionado = producto
-                            pantallaSeleccionada = "Detalle"
+
+                            pantallaSeleccionada =
+                                NavegacionCliente.siguientePantalla(
+                                    pantallaSeleccionada,
+                                    AccionCliente.VER_DETALLE
+                                )
                         },
 
                         onAbrirInventario = { idProducto ->
@@ -324,7 +313,7 @@ fun DashboardScreen(
                     )
                 }
 
-                // GESTIÓN DE PRODUCTOS
+                // GESTION DE PRODUCTOS
                 "GestionProductos" -> {
 
                     if (rol == "Administrador") {
@@ -339,9 +328,7 @@ fun DashboardScreen(
 
                         GestionProductosScreen(
                             productos = productosCatalogo,
-
                             estadosProductos = estadosProductos,
-
                             imagenesProductos = imagenesProductos,
 
                             onVolver = {
@@ -349,6 +336,7 @@ fun DashboardScreen(
                             },
 
                             onCrearProducto = { datos, onResultado ->
+
                                 productoViewModel.crearProducto(
                                     datos,
                                     onResultado
@@ -356,6 +344,7 @@ fun DashboardScreen(
                             },
 
                             onEditarProducto = { id, datos, onResultado ->
+
                                 productoViewModel.editarProducto(
                                     id,
                                     datos,
@@ -364,6 +353,7 @@ fun DashboardScreen(
                             },
 
                             onCambiarEstado = { id, activo, onResultado ->
+
                                 productoViewModel.cambiarEstadoProducto(
                                     id,
                                     activo,
@@ -376,7 +366,7 @@ fun DashboardScreen(
                     }
                 }
 
-                // GESTIÓN DE INVENTARIO
+                // GESTION DE INVENTARIO
                 "GestionInventario" -> {
 
                     if (rol == "Administrador") {
@@ -387,11 +377,8 @@ fun DashboardScreen(
 
                         GestionInventarioScreen(
                             productos = productosCatalogo,
-
                             estadosProductos = estadosProductos,
-
                             productoInicialId = idProductoDesdeQR,
-
                             filtroInicial = filtroInventarioInicial,
 
                             onVolver = {
@@ -417,22 +404,23 @@ fun DashboardScreen(
                     }
                 }
 
-// PANTALLA 15: PERFIL
+                // PERFIL
                 "Perfil" -> {
 
                     if (rol == "Administrador") {
 
                         PerfilAdministradorScreen(
+                            productosActivos =
+                                resumenAdministrativo.productosActivos,
 
+                            alertasStock =
+                                resumenAdministrativo.alertasStock,
 
-                            productosActivos = resumenAdministrativo.productosActivos,
+                            pedidosPendientes =
+                                resumenAdministrativo.pedidosPendientes,
 
-                            alertasStock = resumenAdministrativo.alertasStock,
-
-                            pedidosPendientes = resumenAdministrativo.pedidosPendientes,
-
-                            pedidosRegistrados = resumenAdministrativo.pedidosRegistrados,
-
+                            pedidosRegistrados =
+                                resumenAdministrativo.pedidosRegistrados,
 
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"
@@ -469,21 +457,23 @@ fun DashboardScreen(
                     } else {
 
                         PerfilScreen(
-                            cliente = clienteActual?.takeIf { it.id == clienteId },
+                            cliente = clienteActual
+                                ?.takeIf { it.id == clienteId },
+
                             clienteViewModel = clienteViewModel,
+
                             modifier = Modifier.fillMaxSize(),
+
                             onCerrarSesion = {
                                 carritoViewModel.vaciar()
                                 clienteViewModel.limpiarClienteActual()
                                 onCerrarSesion()
                             }
                         )
-
                     }
                 }
 
-
-                // PANTALLA 14: NOTIFICACIONES
+                // NOTIFICACIONES ADMINISTRATIVAS
                 "Notificaciones" -> {
 
                     if (rol == "Administrador") {
@@ -502,15 +492,12 @@ fun DashboardScreen(
                             },
 
                             onAbrirInventario = { filtro ->
-
                                 idProductoDesdeQR = null
                                 filtroInventarioInicial = filtro
-
                                 pantallaSeleccionada = "GestionInventario"
                             },
 
                             onAbrirPedidos = {
-
                                 filtroPedidosInicial = "Pendiente"
                                 pantallaSeleccionada = "Pedidos"
                             },
@@ -520,95 +507,96 @@ fun DashboardScreen(
                     }
                 }
 
-
-                // GESTIÓN DE PEDIDOS
+                // PEDIDOS
                 "Pedidos" -> {
 
                     if (rol == "Administrador") {
 
                         GestionPedidosScreen(
                             pedidos = pedidosGuardados,
-
                             filtroInicial = filtroPedidosInicial,
 
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"
                             },
 
+                            onCambiarEstado = {
+                                    numero,
+                                    nuevoEstado,
+                                    onResultado ->
 
-                            onCambiarEstado = { numero, nuevoEstado, onResultado ->
+                                val mensajeError =
+                                    CoordinadorOperacionesPedido
+                                        .cambiarEstado {
 
-                                val mensajeError = CoordinadorOperacionesPedido
-                                    .cambiarEstado {
-
-                                        pedidosViewModel.actualizarEstado(
-                                            context = context,
-                                            numero = numero,
-                                            nuevoEstado = nuevoEstado
-                                        )
-                                    }
+                                            pedidosViewModel.actualizarEstado(
+                                                context = context,
+                                                numero = numero,
+                                                nuevoEstado = nuevoEstado
+                                            )
+                                        }
 
                                 onResultado(mensajeError)
                             },
-
 
                             modifier = Modifier.fillMaxSize()
                         )
 
                     } else {
-                        // Historial individual del Cliente autenticado
+
                         MisPedidosScreen(
                             pedidos = pedidosGuardados,
                             clienteId = clienteId,
+
                             onVolver = {
                                 pantallaSeleccionada = "Inicio"
                             },
+
                             modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
 
-                // CATÁLOGO
-                "Catalogo" -> {
+                // CATALOGO Y DETALLE MODULARIZADOS
+                "Catalogo", "Detalle" -> {
 
-                    CatalogoScreen(
+                    PantallasExploracionCliente(
+                        pantalla = pantallaSeleccionada,
                         productos = productosCatalogo,
-
-                        modifier = Modifier.fillMaxSize(),
+                        productoSeleccionado = productoSeleccionado,
+                        rol = rol,
+                        cantidadesCarrito = carrito,
 
                         onVerDetalle = { producto ->
+
                             productoSeleccionado = producto
-                            pantallaSeleccionada = "Detalle"
-                        }
+
+                            pantallaSeleccionada =
+                                NavegacionCliente.siguientePantalla(
+                                    pantallaSeleccionada,
+                                    AccionCliente.VER_DETALLE
+                                )
+                        },
+
+                        onVolverCatalogo = {
+
+                            pantallaSeleccionada =
+                                NavegacionCliente.siguientePantalla(
+                                    pantallaSeleccionada,
+                                    AccionCliente.VOLVER_A_CATALOGO
+                                )
+                        },
+
+                        onAgregar = { producto, cantidad ->
+
+                            carritoViewModel.agregar(
+                                producto,
+                                cantidad
+                            )
+                        },
+
+                        modifier = Modifier.fillMaxSize()
                     )
-                }
-
-                // DETALLE DE PRODUCTO
-                "Detalle" -> {
-
-                    val producto = productoSeleccionado
-
-                    if (producto != null) {
-
-                        DetalleProductoScreen(
-                            producto = producto,
-
-                            rol = rol,
-
-                            cantidadYaAgregada =
-                                carrito[producto.id] ?: 0,
-
-                            onVolver = {
-                                pantallaSeleccionada = "Catalogo"
-                            },
-
-                            onAgregar = { cantidad ->
-                                carritoViewModel.agregar(producto, cantidad)
-                            },
-
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
                 }
 
                 // CARRITO
@@ -616,22 +604,29 @@ fun DashboardScreen(
 
                     CarritoScreen(
                         productos = productosCarrito.values.toList(),
-
                         productosActuales = productosCatalogo,
-
                         cantidades = carrito,
 
-
                         onCambiarCantidad = { id, nuevaCantidad ->
-                            val productoActual = productosCatalogo.firstOrNull { it.id == id }
-                            carritoViewModel.cambiarCantidad(productoActual, id, nuevaCantidad)
-                        },
 
+                            val productoActual = productosCatalogo
+                                .firstOrNull { it.id == id }
+
+                            carritoViewModel.cambiarCantidad(
+                                productoActual,
+                                id,
+                                nuevaCantidad
+                            )
+                        },
 
                         onVolverCatalogo = {
-                            pantallaSeleccionada = "Catalogo"
-                        },
 
+                            pantallaSeleccionada =
+                                NavegacionCliente.siguientePantalla(
+                                    pantallaSeleccionada,
+                                    AccionCliente.VOLVER_A_CATALOGO
+                                )
+                        },
 
                         onConfirmarPedido = {
 
@@ -639,12 +634,14 @@ fun DashboardScreen(
 
                             if (error == null) {
 
-                                // Todos los productos siguen disponibles
-                                pantallaSeleccionada = "Confirmacion"
+                                pantallaSeleccionada =
+                                    NavegacionCliente.siguientePantalla(
+                                        pantallaSeleccionada,
+                                        AccionCliente.CONTINUAR_A_CONFIRMACION
+                                    )
 
                             } else {
 
-                                // Mostrar el problema sin perder el carrito
                                 Toast.makeText(
                                     context,
                                     error,
@@ -653,57 +650,63 @@ fun DashboardScreen(
                             }
                         },
 
-
                         modifier = Modifier.fillMaxSize()
                     )
                 }
 
-                // CONFIRMACIÓN DE PEDIDO
+                // CONFIRMACION DE PEDIDO
                 "Confirmacion" -> {
 
                     ConfirmacionPedidoScreen(
                         productos = productosCarrito.values.toList(),
-
                         cantidades = carrito,
 
                         onVolver = {
-                            pantallaSeleccionada = "Carrito"
+
+                            pantallaSeleccionada =
+                                NavegacionCliente.siguientePantalla(
+                                    pantallaSeleccionada,
+                                    AccionCliente.VOLVER_A_CARRITO
+                                )
                         },
 
+                        onConfirmar = {
+                                nombre,
+                                telefono,
+                                modalidad,
+                                direccion ->
 
+                            val resultado =
+                                CoordinadorOperacionesPedido.confirmar(
 
-                        onConfirmar = { nombre, telefono, modalidad, direccion ->
+                                    validarCarrito = {
+                                        validarYActualizarCarrito()
+                                    },
 
-                            val resultado = CoordinadorOperacionesPedido.confirmar(
+                                    productos =
+                                        productosCarrito.values.toList(),
 
-                                validarCarrito = {
-                                    validarYActualizarCarrito()
-                                },
+                                    cantidades = carrito.toMap(),
 
-                                productos = productosCarrito.values.toList(),
+                                    registrar = { detalles ->
 
-                                cantidades = carrito.toMap(),
-
-                                registrar = { detalles ->
-
-                                    pedidosViewModel.registrar(
-                                        context = context,
-                                        clienteId = clienteId,
-                                        nombreCliente = nombre,
-                                        telefono = telefono,
-                                        modalidad = modalidad,
-                                        direccion = direccion,
-                                        productos = detalles
-                                    )
-                                }
-                            )
+                                        pedidosViewModel.registrar(
+                                            context = context,
+                                            clienteId = clienteId,
+                                            nombreCliente = nombre,
+                                            telefono = telefono,
+                                            modalidad = modalidad,
+                                            direccion = direccion,
+                                            productos = detalles
+                                        )
+                                    }
+                                )
 
                             when (resultado) {
 
                                 is ResultadoConfirmacionPedido.CarritoInvalido -> {
 
-                                    // Avisar al cliente y permitir que corrija
-                                    // los productos sin vaciar su carrito.
+                                    // Conservar carrito y mostrar problema.
                                     Toast.makeText(
                                         context,
                                         resultado.mensaje,
@@ -717,20 +720,23 @@ fun DashboardScreen(
 
                                     val pedido = resultado.pedido
 
-                                    // Preparar los datos de la pantalla de éxito.
                                     numeroPedidoDemo = pedido.numero
                                     totalPedidoDemo = pedido.total
                                     modalidadPedidoDemo = pedido.modalidad
 
-                                    // Vaciar únicamente después del registro exitoso.
+                                    // Vaciar solamente después de guardar.
                                     carritoViewModel.vaciar()
 
-                                    pantallaSeleccionada = "PedidoExito"
+                                    pantallaSeleccionada =
+                                        NavegacionCliente.siguientePantalla(
+                                            pantallaSeleccionada,
+                                            AccionCliente.PEDIDO_REGISTRADO
+                                        )
                                 }
 
                                 ResultadoConfirmacionPedido.ErrorGuardado -> {
 
-                                    // Conservar el carrito si el registro falló.
+                                    // Si ocurre un error, conservar carrito.
                                     Toast.makeText(
                                         context,
                                         "No se pudo guardar el pedido. " +
@@ -745,28 +751,28 @@ fun DashboardScreen(
                     )
                 }
 
-
                 // PEDIDO REGISTRADO EXITOSAMENTE
                 "PedidoExito" -> {
 
                     PedidoExitoScreen(
                         numeroPedido = numeroPedidoDemo,
-
                         modalidad = modalidadPedidoDemo,
-
                         total = totalPedidoDemo,
 
                         onVolverInicio = {
-                            pantallaSeleccionada = "Inicio"
+
+                            pantallaSeleccionada =
+                                NavegacionCliente.siguientePantalla(
+                                    pantallaSeleccionada,
+                                    AccionCliente.VOLVER_A_INICIO
+                                )
                         },
 
                         modifier = Modifier.fillMaxSize()
                     )
                 }
 
-
-
-                // OTRAS PANTALLAS PENDIENTES
+                // OTRAS PANTALLAS
                 else -> {
 
                     Box(
@@ -783,8 +789,7 @@ fun DashboardScreen(
             }
         }
 
-
-// Barra inferior modularizada
+        // BARRA DE NAVEGACION INFERIOR
         BarraNavegacionOYL(
             pantallaActual = pantallaSeleccionada,
 
@@ -799,6 +804,5 @@ fun DashboardScreen(
                 pantallaSeleccionada = destino
             }
         )
-
     }
 }
