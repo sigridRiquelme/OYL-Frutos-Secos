@@ -46,6 +46,7 @@ import com.example.oylfrutossecos.ui.validation.ValidadorCarrito
 import com.example.oylfrutossecos.feature.navegacion.domain.ReglasNavegacionDashboard
 import com.example.oylfrutossecos.ui.components.BarraNavegacionOYL
 import com.example.oylfrutossecos.ui.components.AccesoRapidoCarritoOYL
+import com.example.oylfrutossecos.feature.pedidos.domain.PreparadorDetallesPedido
 
 @Composable
 fun DashboardScreen(
@@ -704,27 +705,11 @@ fun DashboardScreen(
                                 // Solo registrar si la validación fue exitosa
                                 try {
 
-                                    // Preparar los productos de la compra
-                                    val detallesPedido =
-                                        productosCarrito.values.mapNotNull { producto ->
-
-                                            val cantidad =
-                                                carrito[producto.id] ?: 0
-
-                                            if (cantidad > 0) {
-
-                                                DetallePedidoLocal(
-                                                    idProducto = producto.id,
-                                                    nombre = producto.nombre,
-                                                    cantidad = cantidad,
-                                                    precioUnitario = producto.precio
-                                                )
-
-                                            } else {
-
-                                                null
-                                            }
-                                        }
+// Preparar los detalles desde el módulo de pedidos
+                                    val detallesPedido = PreparadorDetallesPedido.desdeCarrito(
+                                        productos = productosCarrito.values.toList(),
+                                        cantidades = carrito.toMap()
+                                    )
 
                                     // Guardar el pedido localmente
                                     val pedido = pedidosViewModel.registrar(
