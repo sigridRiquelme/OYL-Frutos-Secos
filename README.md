@@ -1,82 +1,62 @@
-# OYL Frutos Secos para Android
+# OYL Frutos Secos — Android
 
-## API REST externa · Demostración DSY1105
+Aplicación móvil para la comercialización y administración de productos de OYL Frutos Secos, desarrollada para la asignatura Desarrollo de Aplicaciones Móviles (DSY1105).
 
-En **Administración → Pedidos → Ver detalles**, un pedido de **Despacho** con dirección muestra **Ver ubicación del despacho**. Al confirmar **Consultar ubicación**, Retrofit llama a **GET `https://nominatim.openstreetmap.org/search`** con `q` (lugar público, ciudad y país), `format=jsonv2`, `limit=1`, `countrycodes=cl` y `accept-language=es`. Las direcciones de prueba incluyen Santiago porque corresponden a esa ciudad. Nominatim devuelve la dirección de OpenStreetMap y las coordenadas que MapLibre utiliza para centrar el marcador de entrega. El resultado es **aproximado**. Un solo candidato no permite determinar si existen otros. La app avisa si la respuesta es demasiado general o no contiene una coincidencia y permite volver al pedido.
+## Integrantes:
+- Sigrid Riquelme 004D
+- Diego Carrasco 003D
+- Sebastian Valenzuela 004D
 
-### Condiciones de la demo
+## Tecnologías
 
-- Usa **un solo teléfono** con la demo habilitada. El máximo del [servidor público de Nominatim](https://operations.osmfoundation.org/policies/nominatim/) es de **una solicitud por segundo sumando a todos los usuarios**. La app serializa las consultas en ese teléfono y espera al menos 1,1 segundos entre el fin de una y el inicio de la siguiente. Usa la búsqueda ocasionalmente y detén la demo si el servicio responde 403 o 429.
-- El cliente identifica la app en `User-Agent`, conserva coincidencias y búsquedas vacías en una caché local persistente por lugar y servidor, y muestra la atribución de OpenStreetMap. Solo consulta tras confirmación. No hay autocompletado, consultas masivas ni reintentos automáticos.
-- La app solo envía uno de dos lugares públicos predefinidos. Nunca envía campos del cliente ni texto libre al proveedor. Usa además datos de cliente ficticios en el backend de evaluación. Los domicilios reales, incluso con consentimiento, quedan fuera del alcance del servicio público.
-- La consulta solo se habilita al compilar la variante debug con `-PoylNominatimDemo=true`. Un administrador de dispositivos Android puede establecer la configuración gestionada `nominatim_endpoint` a una URL base HTTPS compatible, o a una cadena vacía para detener las consultas, sin instalar otra versión. Para una distribución en varios dispositivos, configura antes un proveedor con capacidad y condiciones adecuadas, o un servicio controlado con caché y límite global. La app por sí sola no coordina el tráfico entre instalaciones.
+- Kotlin y Jetpack Compose.
+- MVVM y Room.
+- Retrofit.
+- Spring Boot.
+- JWT.
+- Nominatim y MapLibre.
+- JUnit, MockK, Kotest, Robolectric y JaCoCo.
 
-### Probar en un teléfono por USB
+## Funcionalidades
 
-1. Inicia Productos, Inventario, Clientes y Pedidos siguiendo el [README del backend](https://github.com/Sevalenzuela/OYL-Frutos-Secos-Backend). Comprueba que escuchan en los puertos 8081, 8082, 8083 y 8084, respectivamente.
-2. Activa la depuración USB, autoriza el equipo en el teléfono y ejecuta esto desde la raíz de Android en PowerShell. Usa el `adb.exe` de `platform-tools` del SDK de Android si `adb` no está en tu PATH.
+**Cliente:** registro, autenticación, catálogo, códigos QR, carrito, compras, historial de pedidos y perfil.
 
-   ```powershell
-   adb devices
-   8081..8084 | ForEach-Object { adb reverse "tcp:$_" "tcp:$_" }
-   adb reverse --list
-   .\gradlew.bat -PoylPruebaUsb=true -PoylNominatimDemo=true :app:installDebug
-   ```
+**Administrador:** gestión de productos, fotografías, inventario y pedidos.
 
-3. Abre la instalación de prueba, que usa el identificador con sufijo `.pruebausb` y conecta el backend mediante `127.0.0.1`. El teléfono necesita Internet para Nominatim y OpenFreeMap.
-4. Como cliente, crea un pedido de **Despacho** con la dirección **Palacio de La Moneda, Santiago, Chile**. También puedes usar **Museo Nacional de Bellas Artes, Santiago, Chile**. Como administrador, abre el pedido y confirma la consulta de ubicación. Comprueba la dirección devuelta, el aviso, el marcador, la atribución y el botón **Volver al pedido**. Abre de nuevo la misma ubicación para usar la caché. En un pedido de **Retiro** comprueba que la acción no aparezca.
+## Backend
 
-### Pruebas
+https://github.com/Sevalenzuela/OYL-Frutos-Secos-Backend
 
-```powershell
-.\gradlew.bat :app:testDebugUnitTest
-.\gradlew.bat -PoylPruebaUsb=true -PoylNominatimDemo=true :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.example.oylfrutossecos.UbicacionDespachoUiTest"
-```
+| Microservicio | Puerto | Ruta principal |
+|---|---:|---|
+| Productos | 8081 | /api/productos |
+| Inventario | 8082 | /api/inventario |
+| Clientes | 8083 | /api/clientes y /api/auth |
+| Pedidos | 8084 | /api/pedidos |
 
-Las pruebas unitarias de Retrofit usan un servidor en la propia máquina. Las pruebas de interfaz cubren carga, fallos, privacidad y visibilidad. La prueba de red real `demoRealMuestraMarcadorDeEntrega` requiere habilitación explícita mediante el argumento de instrumentación `oylProbarNominatim=true`. Ejecútala en el único teléfono de la demo.
+API externa: https://nominatim.openstreetmap.org/search
 
-## Administración de productos
+## Ejecución
 
-Con el backend actualizado, inicia sesión como administrador y abre **Gestión de
-Productos → + Nuevo producto**. Ingresa el stock inicial y, si quieres adjuntar
-una foto, selecciona **Elegir de galería** o **Tomar fotografía**. En **Editar**
-puedes conservar, reemplazar o quitar la foto. Los cambios de stock de un
-producto existente se hacen en **Gestión de Inventario**.
+1. Iniciar los cuatro microservicios.
+2. Conectar un dispositivo Android mediante USB y habilitar la depuración USB.
+3. Redireccionar los puertos 8081, 8082, 8083 y 8084 mediante ADB reverse.
+4. Instalar y ejecutar el APK firmado de entrega.
 
-Si el alta falla al confirmar el inventario, vuelve a guardar desde el mismo
-formulario con los mismos datos. El servidor usa la misma clave de operación
-para recuperar el alta pendiente o confirmar un alta ya realizada.
+La versión release está configurada para una demostración académica mediante 127.0.0.1.
 
-El emulador usa `10.0.2.2`. Para un teléfono USB usa la variante aislada y
-redirecciona los cuatro puertos de los servicios:
+Para Nominatim, utilizar un único dispositivo de demostración y exclusivamente los lugares públicos predefinidos. No utilizar domicilios reales.
 
-```powershell
-8081..8084 | ForEach-Object { adb reverse "tcp:$_" "tcp:$_" }
-.\gradlew.bat -PoylPruebaUsb=true testDebugUnitTest assembleDebug assembleDebugAndroidTest
-```
+## Pruebas unitarias
 
-La variante USB tiene su propio identificador de aplicación y usa
-`127.0.0.1`. Cada dispositivo descarga las fotos desde el servicio de
-Productos con el host que tiene configurado.
+- 281 pruebas aprobadas.
+- 0 pruebas fallidas.
+- 93,40 % de cobertura de las capas lógicas.
+- 95,86 % de cobertura de ViewModels.
+- 93,01 % de cobertura de Repositories.
 
-En una instalación de pruebas, ejecuta
-`AdministracionProductosBackendTest` con los argumentos de instrumentación
-`oylBackendHost`, `oylAdminUsuario` y `oylAdminClave` de esa instalación.
-La prueba crea un producto, valida el reintento y el stock, consulta la
-foto pública, la conserva, la reemplaza, la quita y desactiva el producto.
-Para comprobar los selectores del sistema, realiza un alta desde galería y
-una edición desde cámara, y abre el producto como cliente en otro dispositivo
-conectado al mismo backend.
+La metodología, los comandos de ejecución y las evidencias están disponibles en [docs/COBERTURA.md](docs/COBERTURA.md).
 
-## Cobertura unitaria reproducible
+## Documentación
 
-El procedimiento, alcance, limitaciones, resultados y comandos estan en
-[docs/COBERTURA.md](docs/COBERTURA.md). Para ejecutar la suite JVM y exigir
-un minimo de 85 % de lineas en las capas evaluadas:
-
-```powershell
-.\gradlew.bat --no-configuration-cache -I cobertura.init.gradle :app:verificarCoberturaLogicaDebug --console=plain
-```
-
-Se generan informes HTML/XML de las capas y de la aplicacion completa.
-Los resultados instrumentados del dispositivo se mantienen separados.
+La documentación técnica completa, los integrantes y las evidencias del APK firmado se incluyen en el documento README externo de la entrega académica.

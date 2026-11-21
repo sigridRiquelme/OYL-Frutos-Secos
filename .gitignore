@@ -28,3 +28,13 @@ keystore.properties
 # Caché aislada y evidencias locales
 .gradle-user/
 ejecucion-*.log
+
+# Aplicaciones compiladas
+*.apk
+*.aab
+*.idsig
+/app/release/
+
+# Archivos temporales
+*.log
+Thumbs.db
