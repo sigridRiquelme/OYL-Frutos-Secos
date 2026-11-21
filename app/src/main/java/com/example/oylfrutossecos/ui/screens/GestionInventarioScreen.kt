@@ -19,6 +19,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.graphicsLayer
 
+import com.example.oylfrutossecos.feature.inventario.domain.AnalisisInventario
 @Composable
 fun GestionInventarioScreen(
     productos: List<ProductoCatalogo>,
@@ -38,7 +39,7 @@ fun GestionInventarioScreen(
     filtroInicial: String = "Todos"
 ) {
 
-    val limiteStockBajo = 10
+    val limiteStockBajo = AnalisisInventario.LIMITE_STOCK_BAJO
 
     var busqueda by rememberSaveable {
         mutableStateOf("")
@@ -96,52 +97,30 @@ fun GestionInventarioScreen(
     }
 
 
-    // Contadores del inventario
-    val productosStockBajo = productos.count {
-        val activo = estadosProductos[it.id] ?: true
 
-        activo && it.stock in 1..limiteStockBajo
-    }
+    // Resumen calculado desde el módulo de inventario
+    val resumenInventario = AnalisisInventario.calcularResumen(
+        productos = productos,
+        estadosProductos = estadosProductos
+    )
 
-    val productosAgotados = productos.count {
-        val activo = estadosProductos[it.id] ?: true
+    val productosStockBajo =
+        resumenInventario.productosStockBajo
 
-        activo && it.stock == 0
-    }
+    val productosAgotados =
+        resumenInventario.productosAgotados
 
-    val unidadesTotales = productos.sumOf {
-        it.stock.toLong()
-    }
+    val unidadesTotales =
+        resumenInventario.unidadesTotales
 
-    // Buscar y filtrar productos
-    val productosFiltrados = productos.filter { producto ->
+    // Buscar y filtrar desde la lógica de inventario
+    val productosFiltrados = AnalisisInventario.filtrarProductos(
+        productos = productos,
+        estadosProductos = estadosProductos,
+        busqueda = busqueda,
+        filtro = filtroSeleccionado
+    )
 
-        val coincideNombre = producto.nombre.contains(
-            busqueda,
-            ignoreCase = true
-        )
-
-        val activo = estadosProductos[producto.id] ?: true
-
-        val coincideFiltro = when (filtroSeleccionado) {
-
-            "Por reponer" ->
-                activo &&
-                        producto.stock in 0..limiteStockBajo
-
-
-            "Stock bajo" ->
-                activo &&
-                        producto.stock in 1..limiteStockBajo
-
-            "Agotados" ->
-                activo && producto.stock == 0
-
-            else -> true
-        }
-
-        coincideNombre && coincideFiltro
-    }
 
     // NUEVO: Ventana para ajustar las existencias
     productoEnAjuste?.let { producto ->

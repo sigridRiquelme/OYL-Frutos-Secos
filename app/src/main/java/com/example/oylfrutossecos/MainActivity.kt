@@ -24,16 +24,21 @@ import com.example.oylfrutossecos.data.local.AppDatabase
 import com.example.oylfrutossecos.data.local.insertarProductosIniciales
 import com.example.oylfrutossecos.data.repository.ProductoRepository
 import com.example.oylfrutossecos.data.repository.ClienteRepository
+import com.example.oylfrutossecos.data.repository.AutenticacionRemota
+import com.example.oylfrutossecos.data.repository.RolRemoto
 // ViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModelFactory
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModelFactory
+import com.example.oylfrutossecos.ui.viewmodel.SesionRemotaViewModel
 // Pantallas
 import com.example.oylfrutossecos.ui.screens.BienvenidaScreen
 import com.example.oylfrutossecos.ui.screens.LoginScreen
 import com.example.oylfrutossecos.ui.screens.RegistroScreen
 import com.example.oylfrutossecos.ui.screens.DashboardScreen
+import com.example.oylfrutossecos.ui.screens.AdministracionConBackend
+import com.example.oylfrutossecos.ui.screens.ComprasConBackend
 
 import com.example.oylfrutossecos.ui.theme.OYLFrutosSecosTheme
 
@@ -71,6 +76,10 @@ class MainActivity : ComponentActivity() {
             ClienteViewModelFactory(clienteRepository)
         )[ClienteViewModel::class.java]
 
+        val sesionRemotaViewModel = ViewModelProvider(this)[SesionRemotaViewModel::class.java]
+        val autenticacionRemota = BuildConfig.CATALOGO_HOST.takeIf { it.isNotBlank() }
+            ?.let { AutenticacionRemota(it) }
+
         // 4. MOSTRAR NUESTRA APLICACION
         setContent {
 
@@ -87,12 +96,35 @@ class MainActivity : ComponentActivity() {
                 var clienteIdActual by remember {
                     mutableStateOf<Int?>(null)
                 }
+                val sesionRemota by sesionRemotaViewModel.sesion.collectAsState()
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
 
-                    when (pantallaActual) {
+                    val sesion = sesionRemota
+                    if (sesion != null) {
+                        val cerrarSesion = {
+                            pantallaActual = "login"
+                            sesionRemotaViewModel.cerrar()
+                        }
+                        if (sesion.rol == RolRemoto.CLIENTE) {
+                            ComprasConBackend(
+                                host = BuildConfig.CATALOGO_HOST,
+                                sesion = sesion,
+                                modelo = sesionRemotaViewModel,
+                                onCerrarSesion = cerrarSesion,
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        } else {
+                            AdministracionConBackend(
+                                host = BuildConfig.CATALOGO_HOST,
+                                sesion = sesion,
+                                onCerrarSesion = cerrarSesion,
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
+                    } else when (pantallaActual) {
 
                         "bienvenida" -> {
                             BienvenidaScreen(
@@ -113,6 +145,13 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 clienteViewModel = clienteViewModel,
                                 modifier = Modifier.padding(innerPadding),
+                                iniciarSesionRemota = autenticacionRemota?.let { autenticacion ->
+                                    { usuario, contrasena ->
+                                        sesionRemotaViewModel.iniciar(
+                                            autenticacion.iniciarSesion(usuario, contrasena)
+                                        )
+                                    }
+                                },
 
                                 onRegistrarse = {
                                     pantallaActual = "registro"
@@ -148,6 +187,7 @@ class MainActivity : ComponentActivity() {
                             RegistroScreen(
                                 clienteViewModel = clienteViewModel,
                                 modifier = Modifier.padding(innerPadding),
+                                registrarEnBackend = autenticacionRemota?.let { it::registrar },
 
                                 onVolverLogin = {
                                     pantallaActual = "login"

@@ -19,6 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.EstadoLogin
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 private val VerdeLogin = Color(0xFF176243)
 
@@ -28,13 +32,16 @@ fun LoginScreen(
     modifier: Modifier = Modifier,
     onRegistrarse: () -> Unit = {},
     onIngresar: (String, String, String) -> Boolean = { _, _, _ -> false },
-    onClienteAutenticado: (Int) -> Unit = {}
+    onClienteAutenticado: (Int) -> Unit = {},
+    iniciarSesionRemota: (suspend (String, String) -> Unit)? = null
 ) {
     var nombreUsuario by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
     var mostrarContrasena by remember { mutableStateOf(false) }
     var rol by remember { mutableStateOf("Cliente") }
     var mensajeError by remember { mutableStateOf("") }
+    var enviando by remember { mutableStateOf(false) }
+    val alcance = rememberCoroutineScope()
     val estadoLogin by clienteViewModel.estadoLogin.collectAsState()
 
     LaunchedEffect(estadoLogin) {
@@ -71,30 +78,33 @@ fun LoginScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
         ) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Tipo de usuario", style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                    listOf("Cliente", "Administrador").forEach { opcion ->
-                        FilterChip(
-                            selected = rol == opcion,
-                            onClick = {
-                                rol = opcion
-                                mensajeError = ""
-                                clienteViewModel.limpiarEstadoLogin()
-                            },
-                            modifier = Modifier.weight(1f),
-                            label = { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text(opcion, maxLines = 1, fontSize = 13.sp)
-                            } },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFE0F0E5),
-                                selectedLabelColor = VerdeLogin
+                if (iniciarSesionRemota == null) {
+                    Text("Tipo de usuario", style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                        listOf("Cliente", "Administrador").forEach { opcion ->
+                            FilterChip(
+                                selected = rol == opcion,
+                                onClick = {
+                                    rol = opcion
+                                    mensajeError = ""
+                                    clienteViewModel.limpiarEstadoLogin()
+                                },
+                                modifier = Modifier.weight(1f),
+                                label = { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    Text(opcion, maxLines = 1, fontSize = 13.sp)
+                                } },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFE0F0E5),
+                                    selectedLabelColor = VerdeLogin
+                                )
                             )
-                        )
+                        }
                     }
                 }
                 OutlinedTextField(
                     value = nombreUsuario,
+                    enabled = !enviando,
                     onValueChange = {
                         nombreUsuario = it
                         mensajeError = ""
@@ -108,6 +118,7 @@ fun LoginScreen(
                 )
                 OutlinedTextField(
                     value = contrasena,
+                    enabled = !enviando,
                     onValueChange = {
                         contrasena = it
                         mensajeError = ""
@@ -141,6 +152,28 @@ fun LoginScreen(
                         mensajeError = ""
                         if (nombreUsuario.isBlank() || contrasena.isBlank()) {
                             mensajeError = "Ingresa tu nombre de usuario y contraseña."
+                        } else if (iniciarSesionRemota != null) {
+                            enviando = true
+                            alcance.launch {
+                                try {
+                                    iniciarSesionRemota(nombreUsuario.trim(), contrasena)
+                                } catch (cancelada: CancellationException) {
+                                    throw cancelada
+                                } catch (error: HttpException) {
+                                    mensajeError = when (error.code()) {
+                                        401, 403 -> "Usuario o contraseña incorrectos."
+                                        400 -> "Revisa el nombre de usuario y la contraseña."
+                                        else -> "No pudimos iniciar sesión. Intenta nuevamente."
+                                    }
+                                } catch (_: IOException) {
+                                    mensajeError = "No pudimos conectar con el servicio de Clientes."
+                                } catch (_: RuntimeException) {
+                                    mensajeError = "No pudimos validar la respuesta del servicio de Clientes."
+                                } finally {
+                                    contrasena = ""
+                                    enviando = false
+                                }
+                            }
                         } else if (rol == "Cliente") {
                             clienteViewModel.iniciarSesion(nombreUsuario.trim(), contrasena)
                         } else {
@@ -150,7 +183,7 @@ fun LoginScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(51.dp),
-                    enabled = estadoLogin != EstadoLogin.Cargando,
+                    enabled = !enviando && estadoLogin != EstadoLogin.Cargando,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = VerdeLogin, contentColor = Color.White,
                         disabledContainerColor = Color(0xFF90A99A),
@@ -158,7 +191,7 @@ fun LoginScreen(
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text(if (estadoLogin == EstadoLogin.Cargando && rol == "Cliente")
+                    Text(if (enviando || (estadoLogin == EstadoLogin.Cargando && rol == "Cliente"))
                         "Ingresando…" else "Iniciar sesión", fontWeight = FontWeight.Bold)
                 }
             }

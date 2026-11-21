@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.EstadoEdicionPerfil
 import com.example.oylfrutossecos.data.local.entity.ClienteEntity
+import com.example.oylfrutossecos.feature.autenticacion.domain.ValidadorRegistro
+import com.example.oylfrutossecos.feature.autenticacion.platform.ValidadorCorreoAndroid
 
 @Composable
 fun PerfilScreen(
@@ -46,7 +48,8 @@ fun PerfilScreen(
     }
 
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -63,8 +66,8 @@ fun PerfilScreen(
                 value = nombre, onValueChange = { nombre = it },
                 label = { Text("Nombre completo") },
                 modifier = Modifier.fillMaxWidth(), singleLine = true,
-                isError = nombre.trim().length < 3,
-                supportingText = { if (nombre.trim().length < 3) Text("Minimo 3 caracteres") }
+                isError = !ValidadorRegistro.esNombreValido(nombre),
+                supportingText = { if (!ValidadorRegistro.esNombreValido(nombre)) Text("Minimo 3 caracteres") }
             )
             OutlinedTextField(
                 value = nombreUsuario,
@@ -74,26 +77,64 @@ fun PerfilScreen(
                 },
                 label = { Text("Nombre de usuario") },
                 modifier = Modifier.fillMaxWidth(), singleLine = true,
-                isError = nombreUsuario.trim().length < 3 ||
+                isError = !ValidadorRegistro.esUsuarioValido(nombreUsuario) ||
                     (estadoEdicion is EstadoEdicionPerfil.Error &&
                         (estadoEdicion as EstadoEdicionPerfil.Error).mensaje.contains("usuario ya existe")),
                 supportingText = {
-                    if (nombreUsuario.trim().length < 3) Text("Minimo 3 caracteres")
+                    if (!ValidadorRegistro.esUsuarioValido(nombreUsuario)) Text("Minimo 3 caracteres")
                     else if (estadoEdicion is EstadoEdicionPerfil.Error &&
                         (estadoEdicion as EstadoEdicionPerfil.Error).mensaje.contains("usuario ya existe"))
                         Text("El nombre de usuario ya existe")
                 }
             )
+
             OutlinedTextField(
-                value = correo, onValueChange = { correo = it },
-                label = { Text("Correo electronico") }, modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                value = correo,
+                onValueChange = {
+                    correo = it
+                    clienteViewModel.limpiarEstadoEdicionPerfil()
+                },
+                label = { Text("Correo electrónico") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+
+                // Marcar el campo si el correo no es válido
+                isError = !ValidadorCorreoAndroid.esValido(
+                    correo.trim()
+                ),
+
+                // Mostrar el mensaje de error
+                supportingText = {
+                    if (!ValidadorCorreoAndroid.esValido(correo.trim())) {
+                        Text("Ingresa un correo electrónico válido")
+                    }
+                }
             )
+
+
             OutlinedTextField(
-                value = telefono, onValueChange = { telefono = it },
-                label = { Text("Telefono") }, modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                value = telefono,
+                onValueChange = {
+                    telefono = it
+                    clienteViewModel.limpiarEstadoEdicionPerfil()
+                },
+                label = { Text("Teléfono") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+
+                // Marcar el campo si el teléfono no es válido
+                isError = !ValidadorRegistro.esTelefonoValido(
+                    telefono
+                ),
+
+                // Mostrar el mensaje de error
+                supportingText = {
+                    if (!ValidadorRegistro.esTelefonoValido(telefono)) {
+                        Text("El teléfono debe tener al menos 9 dígitos")
+                    }
+                }
             )
+
             OutlinedTextField(
                 value = direccion, onValueChange = { direccion = it },
                 label = { Text("Direccion") }, modifier = Modifier.fillMaxWidth()
@@ -128,25 +169,7 @@ fun PerfilScreen(
                 enabled = estadoEdicion != EstadoEdicionPerfil.Guardando
             ) { Text("Cancelar") }
         } else {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Hola, ${cliente.nombre.substringBefore(' ')}!",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold)
-                    Text("@${cliente.nombreUsuario}",
-                        style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            DatosPerfil("Nombre completo", cliente.nombre)
-            DatosPerfil("Nombre de usuario", cliente.nombreUsuario)
-            DatosPerfil("Correo electronico", cliente.correo)
-            DatosPerfil("Telefono", cliente.telefono)
-            DatosPerfil("Direccion", cliente.direccion.ifBlank { "Sin direccion registrada" })
+            ResumenPerfilOYL(cliente.nombre, cliente.nombreUsuario, cliente.correo, cliente.telefono, cliente.direccion)
 
             Button(
                 onClick = {
@@ -164,6 +187,35 @@ fun PerfilScreen(
             ) { Text("Cerrar sesion") }
         }
     }
+}
+
+@Composable
+internal fun ResumenPerfilOYL(
+    nombre: String,
+    usuario: String,
+    correo: String,
+    telefono: String,
+    direccion: String
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                "Hola, ${nombre.substringBefore(' ')}!",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text("@$usuario", style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+    DatosPerfil("Nombre completo", nombre)
+    DatosPerfil("Nombre de usuario", usuario)
+    DatosPerfil("Correo electrónico", correo)
+    DatosPerfil("Teléfono", telefono)
+    DatosPerfil("Dirección", direccion.ifBlank { "Sin dirección registrada" })
 }
 
 @Composable

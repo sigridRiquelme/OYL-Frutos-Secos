@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.oylfrutossecos.feature.carrito.domain.CalculadoraCarrito
 
 @Composable
 fun CarritoScreen(
@@ -33,28 +34,21 @@ fun CarritoScreen(
         (cantidades[producto.id] ?: 0) > 0
     }
 
-    // Total calculado con los precios actuales
-    val total = productosCarrito.sumOf { producto ->
 
-        val precioActual =
-            actualesPorId[producto.id]?.precio ?: producto.precio
+    // Total calculado desde la lógica del carrito
+    val total = CalculadoraCarrito.calcularTotal(
+        productos = productosCarrito,
+        actualesPorId = actualesPorId,
+        cantidades = cantidades
+    )
 
-        val cantidad = cantidades[producto.id] ?: 0
+    // Comprobar si hay cambios que revisar
+    val requiereRevision = CalculadoraCarrito.requiereRevision(
+        productos = productosCarrito,
+        actualesPorId = actualesPorId,
+        cantidades = cantidades
+    )
 
-        precioActual.toLong() * cantidad
-    }
-
-    // Detectar cambios que necesitan revisión
-    val requiereRevision = productosCarrito.any { producto ->
-
-        val actual = actualesPorId[producto.id]
-        val cantidad = cantidades[producto.id] ?: 0
-
-        actual == null ||
-                !actual.activo ||
-                cantidad > actual.stock ||
-                actual.precio != producto.precio
-    }
 
     Column(
         modifier = modifier

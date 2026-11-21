@@ -12,7 +12,6 @@ import com.example.oylfrutossecos.data.local.PedidoLocal
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MisPedidosScreen(
     pedidos: List<PedidoLocal>,
@@ -20,9 +19,16 @@ fun MisPedidosScreen(
     onVolver: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Filtramos los pedidos exclusivamente del cliente autenticado
-    val misPedidos = pedidos.filter { it.clienteId == clienteId }
+    ListaMisPedidosOYL(pedidos.filter { it.clienteId == clienteId }, onVolver, modifier)
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ListaMisPedidosOYL(
+    misPedidos: List<PedidoLocal>,
+    onVolver: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         topBar = {
             TopAppBar(

@@ -1,39 +1,72 @@
+
 package com.example.oylfrutossecos.ui.viewmodel
 
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
-import com.example.oylfrutossecos.ui.screens.ProductoCatalogo
+import com.example.oylfrutossecos.data.model.ProductoCatalogo
+import com.example.oylfrutossecos.feature.carrito.domain.ReglasCarrito
 
-// Estado del carrito separado del Dashboard. Una instancia por cliente autenticado.
 class CarritoViewModel : ViewModel() {
 
-    // productoId -> unidades
+    // Producto ID -> cantidad
     val cantidades = mutableStateMapOf<Int, Int>()
 
-    // productoId -> ficha del producto vista al agregar
+    // Producto ID -> información del producto
     val productos = mutableStateMapOf<Int, ProductoCatalogo>()
 
-    fun agregar(producto: ProductoCatalogo, cantidad: Int): Boolean {
+    // Agregar un producto al carrito
+    fun agregar(
+        producto: ProductoCatalogo,
+        cantidad: Int
+    ): Boolean {
+
         val actual = cantidades[producto.id] ?: 0
-        val disponible = (producto.stock - actual).coerceAtLeast(0)
-        if (!producto.activo || cantidad !in 1..disponible) return false
+
+        if (!ReglasCarrito.puedeAgregar(
+                producto = producto,
+                cantidadSolicitada = cantidad,
+                cantidadActual = actual
+            )
+        ) {
+            return false
+        }
+
         cantidades[producto.id] = actual + cantidad
         productos[producto.id] = producto
+
         return true
     }
 
-    fun cambiarCantidad(producto: ProductoCatalogo?, id: Int, nuevaCantidad: Int) {
+    // Cambiar la cantidad de un producto
+    fun cambiarCantidad(
+        producto: ProductoCatalogo?,
+        id: Int,
+        nuevaCantidad: Int
+    ) {
+
         val anterior = cantidades[id] ?: 0
+
+        // Cantidad cero o negativa: eliminar producto
         if (nuevaCantidad <= 0) {
+
             cantidades.remove(id)
             productos.remove(id)
-        } else if (producto != null && producto.activo &&
-            (nuevaCantidad < anterior || nuevaCantidad <= producto.stock)) {
-            cantidades[id] = nuevaCantidad
-            productos[id] = producto
+
+        } else if (ReglasCarrito.puedeCambiarCantidad(
+                producto = producto,
+                cantidadAnterior = anterior,
+                nuevaCantidad = nuevaCantidad
+            )
+        ) {
+
+            producto?.let { productoValido ->
+                cantidades[id] = nuevaCantidad
+                productos[id] = productoValido
+            }
         }
     }
 
+    // Vaciar completamente el carrito
     fun vaciar() {
         cantidades.clear()
         productos.clear()

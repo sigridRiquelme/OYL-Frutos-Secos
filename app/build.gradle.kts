@@ -19,9 +19,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "CATALOGO_HOST", "\"\"")
     }
 
+    val instalarPruebaAislada = providers.gradleProperty("oylPruebaUsb").orNull == "true"
     buildTypes {
+        debug {
+            val host = if (instalarPruebaAislada) "127.0.0.1" else "10.0.2.2"
+            buildConfigField("String", "CATALOGO_HOST", "\"$host\"")
+            if (instalarPruebaAislada) {
+                applicationIdSuffix = ".pruebausb"
+            }
+        }
         release {
             optimization {
                 enable = false
@@ -34,7 +43,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 }
 
 dependencies {
@@ -53,6 +65,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
 
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -74,4 +88,21 @@ dependencies {
     // Fotografías de productos con Coil 3
     implementation("io.coil-kt.coil3:coil-compose:3.4.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
+
+
+    // Kotest: aserciones más legibles
+    testImplementation(
+        "io.kotest:kotest-assertions-core:5.9.1"
+    )
+
+    // MockK: simulación de dependencias
+    testImplementation(
+        "io.mockk:mockk:1.14.5"
+    )
+
+    // Pruebas de corrutinas
+    testImplementation(
+        "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2"
+    )
+
 }

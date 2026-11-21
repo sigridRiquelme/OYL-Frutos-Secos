@@ -19,7 +19,8 @@ fun DetalleProductoScreen(
     cantidadYaAgregada: Int,
     onVolver: () -> Unit,
     onAgregar: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    permiteAgregar: Boolean = true
 ) {
     val disponible = (producto.stock - cantidadYaAgregada).coerceAtLeast(0)
     var cantidad by remember(producto.id, cantidadYaAgregada) {
@@ -62,7 +63,7 @@ fun DetalleProductoScreen(
             fontWeight = FontWeight.Bold)
         Text(producto.descripcion, style = MaterialTheme.typography.bodyMedium)
 
-        if (rol == "Cliente") {
+        if (rol == "Cliente" && permiteAgregar) {
             Text("Seleccionar cantidad", style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold)
             Row(
@@ -87,7 +88,7 @@ fun DetalleProductoScreen(
             if (cantidadYaAgregada > 0) {
                 Text("En tu carrito: $cantidadYaAgregada unidades")
             }
-        } else {
+        } else if (permiteAgregar) {
             Text("Puedes editar este articulo desde Gestion de productos.")
         }
     }
