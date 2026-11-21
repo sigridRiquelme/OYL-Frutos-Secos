@@ -35,6 +35,9 @@ android {
             }
         }
         release {
+            buildConfigField("String", "CATALOGO_HOST", "\"127.0.0.1\"")
+            buildConfigField("boolean", "GEOCODIFICACION_DEMO", "true")
+
             optimization {
                 enable = false
             }
