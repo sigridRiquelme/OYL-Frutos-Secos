@@ -7,6 +7,15 @@ import retrofit2.http.POST
 
 enum class RolRemoto { CLIENTE, ADMINISTRADOR }
 
+class RegistroRemoto(
+    val nombre: String,
+    val nombreUsuario: String,
+    val correo: String,
+    val telefono: String,
+    val direccion: String?,
+    val contrasena: String
+)
+
 class SesionRemota(
     val clienteId: Long,
     val nombre: String,
@@ -22,6 +31,10 @@ class AutenticacionRemota(host: String, puerto: Int = 8083) {
         .build()
         .create(AuthApi::class.java)
 
+    suspend fun registrar(datos: RegistroRemoto) {
+        api.registrar(datos)
+    }
+
     suspend fun iniciarSesion(usuario: String, contrasena: String): SesionRemota {
         val respuesta = api.iniciarSesion(Credenciales(usuario, contrasena))
         val cliente = checkNotNull(respuesta.cliente)
@@ -34,6 +47,9 @@ class AutenticacionRemota(host: String, puerto: Int = 8083) {
     }
 
     private interface AuthApi {
+        @POST("api/auth/registro")
+        suspend fun registrar(@Body datos: RegistroRemoto)
+
         @POST("api/auth/login")
         suspend fun iniciarSesion(@Body credenciales: Credenciales): Respuesta
     }

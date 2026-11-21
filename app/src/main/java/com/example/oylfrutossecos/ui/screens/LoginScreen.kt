@@ -197,7 +197,7 @@ fun LoginScreen(
             }
         }
         Spacer(Modifier.height(22.dp))
-        if (iniciarSesionRemota == null) Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text("¿Aún no tienes cuenta? ", color = Color(0xFF64796D))
             Text("Regístrate", color = VerdeLogin,
                 fontWeight = FontWeight.Bold,

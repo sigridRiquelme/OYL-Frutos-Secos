@@ -207,6 +207,7 @@ class MainActivity : ComponentActivity() {
                             RegistroScreen(
                                 clienteViewModel = clienteViewModel,
                                 modifier = Modifier.padding(innerPadding),
+                                registrarEnBackend = autenticacionRemota?.let { it::registrar },
 
                                 onVolverLogin = {
                                     pantallaActual = "login"

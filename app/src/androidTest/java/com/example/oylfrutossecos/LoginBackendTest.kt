@@ -24,6 +24,36 @@ class LoginBackendTest {
     val compose = createAndroidComposeRule<MainActivity>()
 
     @Test
+    fun registraUnaCuentaEIniciaSesionDesdeAndroid() {
+        val argumentos = InstrumentationRegistry.getArguments()
+        val clave = argumentos.getString("oylClavePrueba").orEmpty()
+        assumeTrue(argumentos.getString("oylProbarRegistro") == "true" && clave.isNotBlank())
+        val usuario = "nuevo_" + java.util.UUID.randomUUID().toString().take(8)
+        val nombre = "Cliente Nuevo USB"
+
+        compose.onNodeWithText("Comenzar").performClick()
+        compose.onNodeWithText("Regístrate").performClick()
+        fun completar(campo: String, valor: String) {
+            compose.onNode(hasSetTextAction() and hasText(campo))
+                .performScrollTo().performTextInput(valor)
+        }
+        completar("Nombre completo", nombre)
+        completar("Nombre de usuario", usuario)
+        completar("Correo electrónico", "$usuario@example.test")
+        completar("Teléfono", "+56912345678")
+        completar("Contraseña", clave)
+        compose.onNode(hasClickAction() and hasText("Crear Cuenta"))
+            .performScrollTo().performClick()
+        esperarTexto("Iniciar sesión")
+        completar("Nombre de usuario", usuario)
+        completar("Contraseña", clave)
+        compose.onNodeWithText("Iniciar sesión").performScrollTo().performClick()
+        esperarTexto(nombre)
+        compose.onNodeWithText("Mis pedidos").performClick()
+        esperarTexto("Todavía no tienes pedidos.")
+    }
+
+    @Test
     fun iniciaYTerminaSesionConUnaCuentaDelBackend() {
         iniciarSesion()
         compose.onNodeWithText("Cerrar sesión").performClick()

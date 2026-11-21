@@ -9,6 +9,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
@@ -16,12 +18,21 @@ import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.EstadoRegistro
 import com.example.oylfrutossecos.feature.autenticacion.domain.ValidadorRegistro
 import com.example.oylfrutossecos.feature.autenticacion.platform.ValidadorCorreoAndroid
+import com.example.oylfrutossecos.data.repository.RegistroRemoto
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+
+private val usuarioBackend = Regex("[a-zA-Z0-9._-]{3,80}")
+private val telefonoBackend = Regex("[+0-9 ()-]{1,30}")
 
 @Composable
 fun RegistroScreen(
     clienteViewModel: ClienteViewModel,
     modifier: Modifier = Modifier,
-    onVolverLogin: () -> Unit = {}
+    onVolverLogin: () -> Unit = {},
+    registrarEnBackend: (suspend (RegistroRemoto) -> Unit)? = null
 ) {
 
     var nombre by remember { mutableStateOf("") }
@@ -33,11 +44,14 @@ fun RegistroScreen(
 
     var mostrarErrores by remember { mutableStateOf(false) }
     var mensaje by remember { mutableStateOf("") }
+    var enviando by remember { mutableStateOf(false) }
+    val alcance = rememberCoroutineScope()
+    val remoto = registrarEnBackend != null
 
     val estadoRegistro by clienteViewModel.estadoRegistro.collectAsState()
 
-    LaunchedEffect(estadoRegistro) {
-        if (estadoRegistro == EstadoRegistro.Exito) {
+    LaunchedEffect(estadoRegistro, remoto) {
+        if (!remoto && estadoRegistro == EstadoRegistro.Exito) {
             clienteViewModel.limpiarEstado()
             onVolverLogin()
         }
@@ -46,19 +60,24 @@ fun RegistroScreen(
 
     // Validaciones centralizadas
     val nombreInvalido =
-        !ValidadorRegistro.esNombreValido(nombre)
+        !ValidadorRegistro.esNombreValido(nombre) || (remoto && nombre.trim().length > 120)
 
     val nombreUsuarioInvalido =
-        !ValidadorRegistro.esUsuarioValido(nombreUsuario)
+        !ValidadorRegistro.esUsuarioValido(nombreUsuario) ||
+                (remoto && !usuarioBackend.matches(nombreUsuario.trim()))
 
     val correoInvalido =
-        !ValidadorCorreoAndroid.esValido(correo)
+        !ValidadorCorreoAndroid.esValido(correo.trim()) || (remoto && correo.trim().length > 150)
 
     val telefonoInvalido =
-        !ValidadorRegistro.esTelefonoValido(telefono)
+        !ValidadorRegistro.esTelefonoValido(telefono) ||
+                (remoto && !telefonoBackend.matches(telefono.trim()))
 
     val contrasenaInvalida =
-        !ValidadorRegistro.esContrasenaValida(contrasena)
+        if (remoto) contrasena.isBlank() || contrasena.length < 8 ||
+                contrasena.toByteArray(Charsets.UTF_8).size > 72
+        else !ValidadorRegistro.esContrasenaValida(contrasena)
+    val direccionInvalida = remoto && direccion.trim().length > 250
 
 
     Column(
@@ -84,13 +103,14 @@ fun RegistroScreen(
 
         OutlinedTextField(
             value = nombre,
+            enabled = !enviando,
             onValueChange = { nombre = it },
             label = { Text("Nombre completo") },
             modifier = Modifier.fillMaxWidth(),
             isError = mostrarErrores && nombreInvalido,
             supportingText = {
                 if (mostrarErrores && nombreInvalido)
-                    Text("Ingresa al menos 3 caracteres")
+                    Text(if (remoto) "Usa entre 3 y 120 caracteres" else "Ingresa al menos 3 caracteres")
             },
             singleLine = true
         )
@@ -98,6 +118,7 @@ fun RegistroScreen(
 
         OutlinedTextField(
             value = nombreUsuario,
+            enabled = !enviando,
             onValueChange = {
                 nombreUsuario = it
 
@@ -116,7 +137,7 @@ fun RegistroScreen(
 
             supportingText = {
                 if (mostrarErrores && nombreUsuarioInvalido) {
-                    Text("Ingresa al menos 3 caracteres")
+                    Text(if (remoto) "Usa de 3 a 80 letras, números, puntos, guiones o guiones bajos" else "Ingresa al menos 3 caracteres")
                 } else if (
                     estadoRegistro is EstadoRegistro.Error &&
                     (estadoRegistro as EstadoRegistro.Error).mensaje ==
@@ -132,6 +153,7 @@ fun RegistroScreen(
 
         OutlinedTextField(
             value = correo,
+            enabled = !enviando,
             onValueChange = { correo = it },
             label = { Text("Correo electrónico") },
             modifier = Modifier.fillMaxWidth(),
@@ -145,6 +167,7 @@ fun RegistroScreen(
 
         OutlinedTextField(
             value = telefono,
+            enabled = !enviando,
             onValueChange = { telefono = it },
             label = { Text("Teléfono") },
             modifier = Modifier.fillMaxWidth(),
@@ -158,22 +181,29 @@ fun RegistroScreen(
 
         OutlinedTextField(
             value = contrasena,
+            enabled = !enviando,
             onValueChange = { contrasena = it },
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
             isError = mostrarErrores && contrasenaInvalida,
             supportingText = {
                 if (mostrarErrores && contrasenaInvalida)
-                    Text("Mínimo 6 caracteres")
+                    Text(if (remoto) "Mínimo 8 caracteres y máximo 72 bytes" else "Mínimo 6 caracteres")
             },
             singleLine = true
         )
 
         OutlinedTextField(
             value = direccion,
+            enabled = !enviando,
             onValueChange = { direccion = it },
             label = { Text("Dirección (opcional)") },
+            isError = mostrarErrores && direccionInvalida,
+            supportingText = {
+                if (mostrarErrores && direccionInvalida) Text("Máximo 250 caracteres")
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -186,11 +216,37 @@ fun RegistroScreen(
                     !nombreUsuarioInvalido &&
                     !correoInvalido &&
                     !telefonoInvalido &&
-                    !contrasenaInvalida
+                    !contrasenaInvalida &&
+                    !direccionInvalida
                 ) {
                     mensaje = ""
 
-                    clienteViewModel.registrarCliente(
+                    if (registrarEnBackend != null && !enviando) {
+                        val datos = RegistroRemoto(
+                            nombre.trim(), nombreUsuario.trim(), correo.trim(), telefono.trim(),
+                            direccion.trim().ifEmpty { null }, contrasena
+                        )
+                        enviando = true
+                        alcance.launch {
+                            try {
+                                registrarEnBackend(datos)
+                                contrasena = ""
+                                onVolverLogin()
+                            } catch (cancelada: CancellationException) {
+                                throw cancelada
+                            } catch (error: HttpException) {
+                                mensaje = when (error.code()) {
+                                    400 -> "Revisa los datos ingresados."
+                                    409 -> "El nombre de usuario o el correo ya está registrado."
+                                    else -> "No pudimos crear la cuenta. Intenta nuevamente."
+                                }
+                            } catch (_: IOException) {
+                                mensaje = "No pudimos confirmar el registro. Si ya creaste la cuenta, prueba iniciar sesión."
+                            } finally {
+                                enviando = false
+                            }
+                        }
+                    } else if (!remoto) clienteViewModel.registrarCliente(
                         nombre = nombre,
                         nombreUsuario = nombreUsuario,
                         correo = correo,
@@ -203,10 +259,10 @@ fun RegistroScreen(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = estadoRegistro != EstadoRegistro.Cargando
+            enabled = !enviando && (remoto || estadoRegistro != EstadoRegistro.Cargando)
         ) {
             Text(
-                if (estadoRegistro == EstadoRegistro.Cargando)
+                if (enviando || (!remoto && estadoRegistro == EstadoRegistro.Cargando))
                     "Guardando..."
                 else
                     "Crear Cuenta"
@@ -214,7 +270,7 @@ fun RegistroScreen(
         }
 
         if (mensaje.isNotEmpty()) {
-            Text(text = mensaje)
+            Text(text = mensaje, color = MaterialTheme.colorScheme.error)
         }
 
         if (estadoRegistro is EstadoRegistro.Error) {
@@ -229,7 +285,8 @@ fun RegistroScreen(
         }
 
         TextButton(
-            onClick = onVolverLogin
+            onClick = onVolverLogin,
+            enabled = !enviando
         ) {
             Text("¿Ya tienes cuenta? Inicia sesión")
         }
