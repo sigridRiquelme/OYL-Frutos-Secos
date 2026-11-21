@@ -20,11 +20,14 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "CATALOGO_HOST", "\"\"")
+        buildConfigField("boolean", "GEOCODIFICACION_DEMO", "false")
     }
 
     val instalarPruebaAislada = providers.gradleProperty("oylPruebaUsb").orNull == "true"
     buildTypes {
         debug {
+            val geocodificacionDemo = providers.gradleProperty("oylNominatimDemo").orNull == "true"
+            buildConfigField("boolean", "GEOCODIFICACION_DEMO", geocodificacionDemo.toString())
             val host = if (instalarPruebaAislada) "127.0.0.1" else "10.0.2.2"
             buildConfigField("String", "CATALOGO_HOST", "\"$host\"")
             if (instalarPruebaAislada) {

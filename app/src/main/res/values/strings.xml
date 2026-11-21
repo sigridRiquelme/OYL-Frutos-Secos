@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">OYLFrutosSecos</string>
+    <string name="nominatim_endpoint_titulo">URL base HTTPS de Nominatim</string>
 </resources>
