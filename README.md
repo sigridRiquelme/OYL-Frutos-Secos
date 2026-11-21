@@ -34,3 +34,36 @@ En **Administración → Pedidos → Ver detalles**, un pedido de **Despacho** c
 ```
 
 Las pruebas unitarias de Retrofit usan un servidor en la propia máquina. Las pruebas de interfaz cubren carga, fallos, privacidad y visibilidad. La prueba de red real `demoRealMuestraMarcadorDeEntrega` requiere habilitación explícita mediante el argumento de instrumentación `oylProbarNominatim=true`. Ejecútala en el único teléfono de la demo.
+
+## Administración de productos
+
+Con el backend actualizado, inicia sesión como administrador y abre **Gestión de
+Productos → + Nuevo producto**. Ingresa el stock inicial y, si quieres adjuntar
+una foto, selecciona **Elegir de galería** o **Tomar fotografía**. En **Editar**
+puedes conservar, reemplazar o quitar la foto. Los cambios de stock de un
+producto existente se hacen en **Gestión de Inventario**.
+
+Si el alta falla al confirmar el inventario, vuelve a guardar desde el mismo
+formulario con los mismos datos. El servidor usa la misma clave de operación
+para recuperar el alta pendiente o confirmar un alta ya realizada.
+
+El emulador usa `10.0.2.2`. Para un teléfono USB usa la variante aislada y
+redirecciona los cuatro puertos de los servicios:
+
+```powershell
+8081..8084 | ForEach-Object { adb reverse "tcp:$_" "tcp:$_" }
+.\gradlew.bat -PoylPruebaUsb=true testDebugUnitTest assembleDebug assembleDebugAndroidTest
+```
+
+La variante USB tiene su propio identificador de aplicación y usa
+`127.0.0.1`. Cada dispositivo descarga las fotos desde el servicio de
+Productos con el host que tiene configurado.
+
+En una instalación de pruebas, ejecuta
+`AdministracionProductosBackendTest` con los argumentos de instrumentación
+`oylBackendHost`, `oylAdminUsuario` y `oylAdminClave` de esa instalación.
+La prueba crea un producto, valida el reintento y el stock, consulta la
+foto pública, la conserva, la reemplaza, la quita y desactiva el producto.
+Para comprobar los selectores del sistema, realiza un alta desde galería y
+una edición desde cámara, y abre el producto como cliente en otro dispositivo
+conectado al mismo backend.

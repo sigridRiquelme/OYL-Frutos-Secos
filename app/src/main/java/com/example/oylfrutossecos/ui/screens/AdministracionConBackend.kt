@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.oylfrutossecos.data.model.Pedido
 import com.example.oylfrutossecos.data.repository.CatalogoRemoto
+import com.example.oylfrutossecos.data.repository.FotosParaCatalogo
 import com.example.oylfrutossecos.data.repository.EstadoPedidoRemoto
 import com.example.oylfrutossecos.data.repository.PedidosRemotos
 import com.example.oylfrutossecos.data.repository.SesionRemota
@@ -29,7 +30,9 @@ internal fun AdministracionConBackend(
     onCerrarSesion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val contexto = androidx.compose.ui.platform.LocalContext.current
     val catalogo = remember(host) { CatalogoRemoto(host) }
+    val fotos = remember(contexto) { FotosParaCatalogo(contexto.applicationContext) }
     val pedidosRemotos = remember(host) { PedidosRemotos(host) }
     val alcance = rememberCoroutineScope()
     var area by rememberSaveable { mutableStateOf<AreaAdministrativa?>(null) }
@@ -64,7 +67,8 @@ internal fun AdministracionConBackend(
         productos = productos?.map { if (it.id == producto.id) producto else it }
     }
 
-    fun guardar(resultado: (String?) -> Unit, operacion: suspend () -> Unit) {
+    fun guardar(resultado: (String?) -> Unit, conservarFormulario: Boolean = false,
+                operacion: suspend () -> Unit) {
         if (guardando) {
             resultado("Espera a que termine la operación en curso.")
             return
@@ -78,11 +82,16 @@ internal fun AdministracionConBackend(
             } catch (cancelada: CancellationException) {
                 throw cancelada
             } catch (fallo: Exception) {
-                val mensaje = mensajeAdministracion(fallo, "No pudimos confirmar el cambio. Recarga antes de repetir la operación.")
+                val mensajePorDefecto = if (conservarFormulario) {
+                    "No pudimos confirmar el cambio. Vuelve a guardar desde este formulario con los mismos datos."
+                } else {
+                    "No pudimos confirmar el cambio. Recarga antes de repetir la operación."
+                }
+                val mensaje = mensajeAdministracion(fallo, mensajePorDefecto)
                 aviso = mensaje
                 resultado(mensaje)
                 val codigo = (fallo as? HttpException)?.code()
-                if (codigo == null || codigo >= 500) {
+                if (!conservarFormulario && (codigo == null || codigo >= 500)) {
                     productos = null
                     pedidos = null
                     errorCarga = mensaje
@@ -198,11 +207,16 @@ internal fun AdministracionConBackend(
                     estadosProductos = listaProductos.associate { it.id to it.activo },
                     imagenesProductos = listaProductos.associate { it.id to it.imagenUri },
                     onVolver = { abrir(null) },
-                    onCrearProducto = { _, resultado -> resultado(false) },
+                    onCrearProducto = { datos, clave, resultado ->
+                        guardar({ resultado(it == null) }, conservarFormulario = true) {
+                            val creado = catalogo.crear(sesion, datos, clave, fotos.preparar(datos.imagenUri))
+                            productos = listaProductos.filterNot { it.id == creado.id } + creado
+                        }
+                    },
                     onEditarProducto = { id, datos, resultado ->
-                        guardar({ resultado(it == null) }) {
+                        guardar({ resultado(it == null) }, conservarFormulario = true) {
                             val stock = listaProductos.first { it.id == id }.stock
-                            actualizarProducto(catalogo.editar(sesion, id, datos, stock))
+                            actualizarProducto(catalogo.editar(sesion, id, datos, stock, fotos.preparar(datos.imagenUri)))
                         }
                     },
                     onCambiarEstado = { id, activo, resultado ->
@@ -276,5 +290,7 @@ private fun mensajeAdministracion(fallo: Exception, porDefecto: String): String 
         401, 403 -> "Tu sesión no tiene acceso a esta operación. Vuelve a iniciar sesión."
         404 -> "El registro ya no está disponible o aún no tiene inventario."
         409 -> "El backend rechazó el cambio. Revisa el stock o el estado actual."
+        413 -> "La fotografía supera el tamaño permitido."
+        415 -> "No se pudo validar la fotografía. Elige otra imagen."
         else -> porDefecto
     }

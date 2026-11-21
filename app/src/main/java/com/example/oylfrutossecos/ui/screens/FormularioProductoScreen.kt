@@ -171,7 +171,7 @@ fun FormularioProductoScreen(
         )
 
         // Stock
-        if (!edicionRemota) CampoProducto(
+        if (!edicionRemota || producto == null) CampoProducto(
             etiqueta = "Stock",
             valor = stock,
             onCambio = { stock = it },
@@ -197,16 +197,7 @@ fun FormularioProductoScreen(
 
         HorizontalDivider()
 
-        // NUEVO: Selector de fotografías
-        if (edicionRemota) {
-            CampoProducto(
-                etiqueta = "URL HTTPS de la foto (opcional)",
-                valor = imagenUri.orEmpty(),
-                onCambio = { imagenUri = it },
-                error = errores["imagen"],
-                tipo = KeyboardType.Uri
-            )
-        } else SelectorImagenProducto(
+        SelectorImagenProducto(
             imagenUri = imagenUri,
 
             onImagenCambiada = { nuevaImagen ->
@@ -235,12 +226,12 @@ fun FormularioProductoScreen(
                     nombre = nombre.trim(),
                     categoria = categoria,
                     precio = precio.trim(),
-                    stock = if (edicionRemota) "0" else stock.trim(),
+                    stock = if (edicionRemota && producto != null) "0" else stock.trim(),
                     descripcion = descripcion.trim(),
                     presentacion = presentacion.trim(),
 
                     // NUEVO: Incluir fotografía
-                    imagenUri = if (edicionRemota) imagenUri?.trim()?.takeIf { it.isNotEmpty() } else imagenUri
+                    imagenUri = imagenUri
                 )
 
                 // Validaciones separadas de la UI
@@ -249,12 +240,6 @@ fun FormularioProductoScreen(
                         if (datos.nombre.length > 120) put("nombre", "Máximo 120 caracteres")
                         if (datos.descripcion.length > 500) put("descripcion", "Máximo 500 caracteres")
                         if (datos.presentacion.length > 100) put("presentacion", "Máximo 100 caracteres")
-                        datos.imagenUri?.let { url ->
-                            val uri = android.net.Uri.parse(url)
-                            if (url.length > 500 || uri.scheme != "https" || uri.host.isNullOrBlank()) {
-                                put("imagen", "Ingresa una URL HTTPS válida de hasta 500 caracteres")
-                            }
-                        }
                     }
                 }
 
