@@ -88,8 +88,9 @@ class LoginBackendTest {
         val argumentos = InstrumentationRegistry.getArguments()
         val clave = argumentos.getString("oylClavePrueba").orEmpty()
         assumeTrue(argumentos.getString("oylProbarRegistro") == "true" && clave.isNotBlank())
-        val usuario = "nuevo_" + java.util.UUID.randomUUID().toString().take(8)
-        val nombre = "Cliente Nuevo USB"
+        val usuario = argumentos.getString("oylUsuarioRegistro")
+            ?: ("nuevo_" + java.util.UUID.randomUUID().toString().take(8))
+        val nombre = argumentos.getString("oylNombrePrueba") ?: "Cliente Nuevo USB"
 
         compose.onNodeWithText("Comenzar").performClick()
         compose.onNodeWithText("Regístrate").performClick()
@@ -111,6 +112,15 @@ class LoginBackendTest {
         esperarTexto(nombre)
         compose.onNodeWithText("Mis pedidos").performClick()
         esperarTexto("Todavía no tienes pedidos.")
+    }
+
+    @Test
+    fun clienteVeElEstadoActualizadoPorElAdministrador() {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("oylProbarEstadoFinal") == "true")
+        iniciarSesion()
+        compose.onNodeWithText("Mis pedidos").performScrollTo().performClick()
+        esperarTexto("EN PREPARACION · ${precioOYL(4500)}")
+        compose.onNodeWithText("EN PREPARACION · ${precioOYL(4500)}").assertIsDisplayed()
     }
 
     @Test
