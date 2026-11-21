@@ -38,9 +38,9 @@ internal enum class EstadoPedidoRemoto(val etiqueta: String) {
     CANCELADO("Cancelado")
 }
 
-internal class PedidosRemotos(host: String) {
+internal class PedidosRemotos(host: String, puerto: Int = 8084) {
     private val api = Retrofit.Builder()
-        .baseUrl("http://$host:8084/")
+        .baseUrl("http://$host:$puerto/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
         .create(PedidosApi::class.java)

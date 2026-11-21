@@ -24,3 +24,7 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+
+# Caché aislada y evidencias locales
+.gradle-user/
+ejecucion-*.log

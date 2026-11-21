@@ -67,3 +67,16 @@ foto pública, la conserva, la reemplaza, la quita y desactiva el producto.
 Para comprobar los selectores del sistema, realiza un alta desde galería y
 una edición desde cámara, y abre el producto como cliente en otro dispositivo
 conectado al mismo backend.
+
+## Cobertura unitaria reproducible
+
+El procedimiento, alcance, limitaciones, resultados y comandos estan en
+[docs/COBERTURA.md](docs/COBERTURA.md). Para ejecutar la suite JVM y exigir
+un minimo de 85 % de lineas en las capas evaluadas:
+
+```powershell
+.\gradlew.bat --no-configuration-cache -I cobertura.init.gradle :app:verificarCoberturaLogicaDebug --console=plain
+```
+
+Se generan informes HTML/XML de las capas y de la aplicacion completa.
+Los resultados instrumentados del dispositivo se mantienen separados.
