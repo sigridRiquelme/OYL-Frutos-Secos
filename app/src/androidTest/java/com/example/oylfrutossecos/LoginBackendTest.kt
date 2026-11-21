@@ -25,6 +25,41 @@ class LoginBackendTest {
     val compose = createAndroidComposeRule<MainActivity>()
 
     @Test
+    fun administraProductosInventarioYPedidos() {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("oylProbarAdministracion") == "true")
+        iniciarSesion()
+        esperarTexto("Administración")
+        val producto = "Almendras naturales"
+        fun buscarProducto(nombre: String) {
+            esperarTexto("Buscar producto")
+            compose.onNode(hasSetTextAction() and hasText("Buscar producto")).performTextInput(nombre)
+        }
+
+        compose.onNodeWithText("Productos").performClick()
+        buscarProducto(producto)
+        compose.onNodeWithText("Editar").performClick()
+        compose.onNode(hasSetTextAction() and hasText("Nombre")).performTextReplacement("Almendras USB")
+        compose.onNodeWithText("Guardar cambios").performScrollTo().performClick()
+        esperarTexto("Gestión de Productos")
+        compose.onNodeWithText("← Volver al inicio").performClick()
+
+        compose.onNodeWithText("Inventario").performClick()
+        buscarProducto("Almendras USB")
+        compose.onNodeWithText("Ajustar stock").performClick()
+        compose.onNode(hasSetTextAction() and hasText("Cantidad")).performTextInput("2")
+        compose.onNodeWithText("Guardar ajuste").performClick()
+        esperarTexto("Entrada de 2 unidades registrada correctamente para Almendras USB.")
+        compose.onNodeWithText("← Volver al inicio").performClick()
+
+        compose.onNodeWithText("Pedidos").performClick()
+        esperarTexto("Ver detalles")
+        compose.onNodeWithText("Ver detalles").performClick()
+        compose.onNodeWithText("Cambiar a: En preparación").performScrollTo().performClick()
+        compose.onNodeWithText("Confirmar").performClick()
+        esperarTexto("Estado: En preparación")
+    }
+
+    @Test
     fun guardaElPerfilYLoRecuperaAlVolverAEntrar() {
         assumeTrue(InstrumentationRegistry.getArguments().getString("oylProbarPerfil") == "true")
         iniciarSesion()

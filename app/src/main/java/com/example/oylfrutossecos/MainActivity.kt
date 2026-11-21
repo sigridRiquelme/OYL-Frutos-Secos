@@ -45,7 +45,7 @@ import com.example.oylfrutossecos.ui.screens.BienvenidaScreen
 import com.example.oylfrutossecos.ui.screens.LoginScreen
 import com.example.oylfrutossecos.ui.screens.RegistroScreen
 import com.example.oylfrutossecos.ui.screens.DashboardScreen
-import com.example.oylfrutossecos.ui.screens.CatalogoConBackend
+import com.example.oylfrutossecos.ui.screens.AdministracionConBackend
 import com.example.oylfrutossecos.ui.screens.ComprasConBackend
 
 import com.example.oylfrutossecos.ui.theme.OYLFrutosSecosTheme
@@ -137,9 +137,9 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.weight(1f)
                                 )
                             } else {
-                                CatalogoConBackend(
+                                AdministracionConBackend(
                                     host = BuildConfig.CATALOGO_HOST,
-                                    rol = "Administrador",
+                                    sesion = sesion,
                                     modifier = Modifier.weight(1f)
                                 )
                             }

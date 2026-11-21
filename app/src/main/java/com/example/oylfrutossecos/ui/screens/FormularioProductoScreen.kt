@@ -29,7 +29,8 @@ fun FormularioProductoScreen(
     producto: ProductoCatalogo? = null,
 
     // NUEVO: Fotografía existente al editar
-    imagenUriInicial: String? = null
+    imagenUriInicial: String? = null,
+    edicionRemota: Boolean = false
 ) {
 
     val esEdicion = producto != null
@@ -170,7 +171,7 @@ fun FormularioProductoScreen(
         )
 
         // Stock
-        CampoProducto(
+        if (!edicionRemota) CampoProducto(
             etiqueta = "Stock",
             valor = stock,
             onCambio = { stock = it },
@@ -197,7 +198,15 @@ fun FormularioProductoScreen(
         HorizontalDivider()
 
         // NUEVO: Selector de fotografías
-        SelectorImagenProducto(
+        if (edicionRemota) {
+            CampoProducto(
+                etiqueta = "URL HTTPS de la foto (opcional)",
+                valor = imagenUri.orEmpty(),
+                onCambio = { imagenUri = it },
+                error = errores["imagen"],
+                tipo = KeyboardType.Uri
+            )
+        } else SelectorImagenProducto(
             imagenUri = imagenUri,
 
             onImagenCambiada = { nuevaImagen ->
@@ -226,16 +235,28 @@ fun FormularioProductoScreen(
                     nombre = nombre.trim(),
                     categoria = categoria,
                     precio = precio.trim(),
-                    stock = stock.trim(),
+                    stock = if (edicionRemota) "0" else stock.trim(),
                     descripcion = descripcion.trim(),
                     presentacion = presentacion.trim(),
 
                     // NUEVO: Incluir fotografía
-                    imagenUri = imagenUri
+                    imagenUri = if (edicionRemota) imagenUri?.trim()?.takeIf { it.isNotEmpty() } else imagenUri
                 )
 
                 // Validaciones separadas de la UI
-                errores = ValidadorProducto.validar(datos)
+                errores = ValidadorProducto.validar(datos).toMutableMap().apply {
+                    if (edicionRemota) {
+                        if (datos.nombre.length > 120) put("nombre", "Máximo 120 caracteres")
+                        if (datos.descripcion.length > 500) put("descripcion", "Máximo 500 caracteres")
+                        if (datos.presentacion.length > 100) put("presentacion", "Máximo 100 caracteres")
+                        datos.imagenUri?.let { url ->
+                            val uri = android.net.Uri.parse(url)
+                            if (url.length > 500 || uri.scheme != "https" || uri.host.isNullOrBlank()) {
+                                put("imagen", "Ingresa una URL HTTPS válida de hasta 500 caracteres")
+                            }
+                        }
+                    }
+                }
 
                 errorGuardado = ""
 

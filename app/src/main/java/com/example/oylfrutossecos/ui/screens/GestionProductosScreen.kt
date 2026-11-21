@@ -36,7 +36,8 @@ fun GestionProductosScreen(
         Boolean,
         (Boolean) -> Unit
     ) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    edicionRemota: Boolean = false
 ) {
 
     var mostrandoFormulario by rememberSaveable {
@@ -165,6 +166,7 @@ fun GestionProductosScreen(
 
             FormularioProductoScreen(
                 producto = productoEnEdicion,
+                edicionRemota = edicionRemota,
 
                 // NUEVO: Recuperar la fotografía existente
                 imagenUriInicial = productoEnEdicion?.let {
@@ -235,8 +237,8 @@ fun GestionProductosScreen(
             text = "Productos registrados: ${productos.size}"
         )
 
-        // Crear producto
-        Button(
+        // Crear producto local
+        if (!edicionRemota) Button(
             onClick = {
                 idProductoEditando = null
                 mostrandoFormulario = true
