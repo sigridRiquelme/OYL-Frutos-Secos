@@ -335,7 +335,7 @@ fun DashboardScreen(
                                 pantallaSeleccionada = "Inicio"
                             },
 
-                            onCrearProducto = { datos, onResultado ->
+                            onCrearProducto = { datos, _, onResultado ->
 
                                 productoViewModel.crearProducto(
                                     datos,

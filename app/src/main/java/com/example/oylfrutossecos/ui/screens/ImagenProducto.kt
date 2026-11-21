@@ -219,6 +219,16 @@ fun ImagenProductoVistaPrevia(
 
     val context = LocalContext.current
 
+    if (imagenUri?.startsWith("https://") == true || imagenUri?.startsWith("http://") == true) {
+        coil3.compose.AsyncImage(
+            model = imagenUri,
+            contentDescription = "Fotografía del producto",
+            modifier = modifier,
+            contentScale = ContentScale.Crop
+        )
+        return
+    }
+
     val imagen by produceState<ImageBitmap?>(
         initialValue = null,
         key1 = imagenUri

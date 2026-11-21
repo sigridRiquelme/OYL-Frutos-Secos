@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.oylfrutossecos.data.model.Pedido
 import com.example.oylfrutossecos.data.repository.CatalogoRemoto
+import com.example.oylfrutossecos.data.repository.FotosParaCatalogo
 import com.example.oylfrutossecos.data.repository.EstadoPedidoRemoto
 import com.example.oylfrutossecos.data.repository.PedidosRemotos
 import com.example.oylfrutossecos.data.repository.SesionRemota
@@ -29,7 +30,9 @@ internal fun AdministracionConBackend(
     onCerrarSesion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val contexto = androidx.compose.ui.platform.LocalContext.current
     val catalogo = remember(host) { CatalogoRemoto(host) }
+    val fotos = remember(contexto) { FotosParaCatalogo(contexto.applicationContext) }
     val pedidosRemotos = remember(host) { PedidosRemotos(host) }
     val alcance = rememberCoroutineScope()
     var area by rememberSaveable { mutableStateOf<AreaAdministrativa?>(null) }
@@ -64,7 +67,8 @@ internal fun AdministracionConBackend(
         productos = productos?.map { if (it.id == producto.id) producto else it }
     }
 
-    fun guardar(resultado: (String?) -> Unit, operacion: suspend () -> Unit) {
+    fun guardar(resultado: (String?) -> Unit, conservarFormulario: Boolean = false,
+                operacion: suspend () -> Unit) {
         if (guardando) {
             resultado("Espera a que termine la operación en curso.")
             return
@@ -82,7 +86,7 @@ internal fun AdministracionConBackend(
                 aviso = mensaje
                 resultado(mensaje)
                 val codigo = (fallo as? HttpException)?.code()
-                if (codigo == null || codigo >= 500) {
+                if (!conservarFormulario && (codigo == null || codigo >= 500)) {
                     productos = null
                     pedidos = null
                     errorCarga = mensaje
@@ -198,11 +202,16 @@ internal fun AdministracionConBackend(
                     estadosProductos = listaProductos.associate { it.id to it.activo },
                     imagenesProductos = listaProductos.associate { it.id to it.imagenUri },
                     onVolver = { abrir(null) },
-                    onCrearProducto = { _, resultado -> resultado(false) },
+                    onCrearProducto = { datos, clave, resultado ->
+                        guardar({ resultado(it == null) }, conservarFormulario = true) {
+                            val creado = catalogo.crear(sesion, datos, clave, fotos.preparar(datos.imagenUri))
+                            productos = listaProductos.filterNot { it.id == creado.id } + creado
+                        }
+                    },
                     onEditarProducto = { id, datos, resultado ->
-                        guardar({ resultado(it == null) }) {
+                        guardar({ resultado(it == null) }, conservarFormulario = true) {
                             val stock = listaProductos.first { it.id == id }.stock
-                            actualizarProducto(catalogo.editar(sesion, id, datos, stock))
+                            actualizarProducto(catalogo.editar(sesion, id, datos, stock, fotos.preparar(datos.imagenUri)))
                         }
                     },
                     onCambiarEstado = { id, activo, resultado ->

@@ -24,6 +24,7 @@ fun GestionProductosScreen(
     onVolver: () -> Unit,
     onCrearProducto: (
         DatosNuevoProducto,
+        String,
         (Boolean) -> Unit
     ) -> Unit,
     onEditarProducto: (
@@ -39,6 +40,8 @@ fun GestionProductosScreen(
     modifier: Modifier = Modifier,
     edicionRemota: Boolean = false
 ) {
+
+    var claveAlta by rememberSaveable { mutableStateOf("") }
 
     var mostrandoFormulario by rememberSaveable {
         mutableStateOf(false)
@@ -186,6 +189,7 @@ fun GestionProductosScreen(
 
                         onCrearProducto(
                             datos,
+                            claveAlta,
                             onResultado
                         )
 
@@ -237,10 +241,10 @@ fun GestionProductosScreen(
             text = "Productos registrados: ${productos.size}"
         )
 
-        // Crear producto local
-        if (!edicionRemota) Button(
+        Button(
             onClick = {
                 idProductoEditando = null
+                claveAlta = java.util.UUID.randomUUID().toString()
                 mostrandoFormulario = true
             },
             modifier = Modifier.fillMaxWidth()
