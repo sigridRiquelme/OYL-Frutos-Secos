@@ -169,25 +169,7 @@ fun PerfilScreen(
                 enabled = estadoEdicion != EstadoEdicionPerfil.Guardando
             ) { Text("Cancelar") }
         } else {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Hola, ${cliente.nombre.substringBefore(' ')}!",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold)
-                    Text("@${cliente.nombreUsuario}",
-                        style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            DatosPerfil("Nombre completo", cliente.nombre)
-            DatosPerfil("Nombre de usuario", cliente.nombreUsuario)
-            DatosPerfil("Correo electronico", cliente.correo)
-            DatosPerfil("Telefono", cliente.telefono)
-            DatosPerfil("Direccion", cliente.direccion.ifBlank { "Sin direccion registrada" })
+            ResumenPerfilOYL(cliente.nombre, cliente.nombreUsuario, cliente.correo, cliente.telefono, cliente.direccion)
 
             Button(
                 onClick = {
@@ -205,6 +187,35 @@ fun PerfilScreen(
             ) { Text("Cerrar sesion") }
         }
     }
+}
+
+@Composable
+internal fun ResumenPerfilOYL(
+    nombre: String,
+    usuario: String,
+    correo: String,
+    telefono: String,
+    direccion: String
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                "Hola, ${nombre.substringBefore(' ')}!",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text("@$usuario", style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+    DatosPerfil("Nombre completo", nombre)
+    DatosPerfil("Nombre de usuario", usuario)
+    DatosPerfil("Correo electrónico", correo)
+    DatosPerfil("Teléfono", telefono)
+    DatosPerfil("Dirección", direccion.ifBlank { "Sin dirección registrada" })
 }
 
 @Composable

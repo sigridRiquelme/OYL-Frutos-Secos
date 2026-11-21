@@ -7,6 +7,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -28,14 +29,14 @@ class LoginBackendTest {
     fun administraProductosInventarioYPedidos() {
         assumeTrue(InstrumentationRegistry.getArguments().getString("oylProbarAdministracion") == "true")
         iniciarSesion()
-        esperarTexto("Administración")
+        esperarTexto("Resumen de la tienda")
         val producto = "Almendras naturales"
         fun buscarProducto(nombre: String) {
             esperarTexto("Buscar producto")
             compose.onNode(hasSetTextAction() and hasText("Buscar producto")).performTextInput(nombre)
         }
 
-        compose.onNodeWithText("Productos").performClick()
+        compose.onNode(hasClickAction() and hasText("Productos")).performScrollTo().performClick()
         buscarProducto(producto)
         compose.onNodeWithText("Editar").performClick()
         compose.onNode(hasSetTextAction() and hasText("Nombre")).performTextReplacement("Almendras USB")
@@ -43,7 +44,7 @@ class LoginBackendTest {
         esperarTexto("Gestión de Productos")
         compose.onNodeWithText("← Volver al inicio").performClick()
 
-        compose.onNodeWithText("Inventario").performClick()
+        compose.onNode(hasClickAction() and hasText("Inventario")).performScrollTo().performClick()
         buscarProducto("Almendras USB")
         compose.onNodeWithText("Ajustar stock").performClick()
         compose.onNode(hasSetTextAction() and hasText("Cantidad")).performTextInput("2")
@@ -64,7 +65,7 @@ class LoginBackendTest {
         assumeTrue(InstrumentationRegistry.getArguments().getString("oylProbarPerfil") == "true")
         iniciarSesion()
         fun abrirPerfil() {
-            compose.onNode(hasClickAction() and hasText("Mi perfil")).performScrollTo().performClick()
+            compose.onNodeWithContentDescription("Perfil").performClick()
             esperarTexto("Editar perfil")
         }
 
@@ -75,12 +76,12 @@ class LoginBackendTest {
             .performScrollTo().performTextReplacement(direccion)
         compose.onNodeWithText("Guardar cambios").performScrollTo().performClick()
         esperarTexto("Perfil actualizado.")
-        compose.onNodeWithText("Dirección: $direccion").assertIsDisplayed()
-        compose.onNodeWithText("Cerrar sesión").performClick()
+        compose.onNodeWithText(direccion).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Cerrar sesión").performScrollTo().performClick()
 
         iniciarSesion(desdeBienvenida = false)
         abrirPerfil()
-        compose.onNodeWithText("Dirección: $direccion").assertIsDisplayed()
+        compose.onNodeWithText(direccion).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -109,24 +110,26 @@ class LoginBackendTest {
         completar("Nombre de usuario", usuario)
         completar("Contraseña", clave)
         compose.onNodeWithText("Iniciar sesión").performScrollTo().performClick()
-        esperarTexto(nombre)
-        compose.onNodeWithText("Mis pedidos").performClick()
-        esperarTexto("Todavía no tienes pedidos.")
+        esperarTexto("¡Hola, ${nombre.substringBefore(' ')}!")
+        compose.onNodeWithContentDescription("Pedidos").performClick()
+        esperarTexto("Aún no tienes pedidos registrados.")
     }
 
     @Test
     fun clienteVeElEstadoActualizadoPorElAdministrador() {
         assumeTrue(InstrumentationRegistry.getArguments().getString("oylProbarEstadoFinal") == "true")
         iniciarSesion()
-        compose.onNodeWithText("Mis pedidos").performScrollTo().performClick()
-        esperarTexto("EN PREPARACION · ${precioOYL(4500)}")
-        compose.onNodeWithText("EN PREPARACION · ${precioOYL(4500)}").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Pedidos").performClick()
+        esperarTexto("En preparación")
+        compose.onNodeWithText("En preparación").assertIsDisplayed()
     }
 
     @Test
     fun iniciaYTerminaSesionConUnaCuentaDelBackend() {
         iniciarSesion()
-        compose.onNodeWithText("Cerrar sesión").performClick()
+        compose.onNodeWithContentDescription("Perfil").performClick()
+        esperarTexto("Mi perfil")
+        compose.onNodeWithText("Cerrar sesión").performScrollTo().performClick()
         compose.onNodeWithText("Iniciar sesión").assertIsDisplayed()
     }
 
@@ -134,21 +137,23 @@ class LoginBackendTest {
     fun compraDesdeElCarritoYConsultaElHistorial() {
         assumeTrue(InstrumentationRegistry.getArguments().getString("oylProbarCompra") == "true")
         iniciarSesion()
+        compose.onNode(hasClickAction() and hasText("Catálogo")).performScrollTo().performClick()
         esperarTexto("Almendras naturales")
         compose.onNodeWithText("Almendras naturales").performClick()
         compose.onNodeWithText("Agregar al carrito").performScrollTo().performClick()
-        compose.onNodeWithText("Carrito (1)").performClick()
+        compose.onNode(hasClickAction() and hasText("Mi carrito") and hasText("1")).performClick()
         esperarTexto("Continuar al pedido")
         compose.onNodeWithText("Continuar al pedido").performClick()
         compose.onNode(hasSetTextAction() and hasText("Teléfono de contacto"))
             .performScrollTo().performTextInput("+56912345678")
         compose.onNode(hasClickAction() and hasText("Confirmar pedido"))
             .performScrollTo().performClick()
-        esperarTexto("Pedido confirmado")
+        esperarTexto("¡Pedido confirmado!")
         compose.onNodeWithText("Total: ${precioOYL(4500)}").assertIsDisplayed()
         compose.onNodeWithText("Ver mis pedidos").performClick()
-        esperarTexto("Historial de pedidos")
-        compose.onNodeWithText("PENDIENTE · ${precioOYL(4500)}").assertIsDisplayed()
+        esperarTexto("Mis Pedidos")
+        esperarTexto("Pendiente")
+        compose.onNodeWithText("Pendiente").assertIsDisplayed()
     }
 
     private fun iniciarSesion(desdeBienvenida: Boolean = true) {
@@ -162,8 +167,13 @@ class LoginBackendTest {
         compose.onNode(hasSetTextAction() and hasText("Nombre de usuario")).performTextInput(usuario)
         compose.onNode(hasSetTextAction() and hasText("Contraseña")).performTextInput(clave)
         compose.onNodeWithText("Iniciar sesión").performScrollTo().performClick()
-        esperarTexto(nombre)
-        compose.onNodeWithText(nombre).assertIsDisplayed()
+        val saludo = if (argumentos.getString("oylProbarAdministracion") == "true") {
+            "Hola, administrador"
+        } else {
+            "¡Hola, ${nombre.trim().substringBefore(' ')}!"
+        }
+        esperarTexto(saludo)
+        compose.onNodeWithText(saludo).assertIsDisplayed()
     }
 
     private fun esperarTexto(texto: String) {

@@ -8,18 +8,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -112,37 +104,25 @@ class MainActivity : ComponentActivity() {
 
                     val sesion = sesionRemota
                     if (sesion != null) {
-                        Column(Modifier.fillMaxSize().padding(innerPadding)) {
-                            Row(
-                                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(sesionRemotaViewModel.nombreMostrado)
-                                    Text(if (sesion.rol == RolRemoto.ADMINISTRADOR) "Administrador" else "Cliente")
-                                }
-                                TextButton(onClick = {
-                                    pantallaActual = "login"
-                                    sesionRemotaViewModel.cerrar()
-                                }) {
-                                    Text("Cerrar sesión")
-                                }
-                            }
-                            if (sesion.rol == RolRemoto.CLIENTE) {
-                                ComprasConBackend(
-                                    host = BuildConfig.CATALOGO_HOST,
-                                    sesion = sesion,
-                                    modelo = sesionRemotaViewModel,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            } else {
-                                AdministracionConBackend(
-                                    host = BuildConfig.CATALOGO_HOST,
-                                    sesion = sesion,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                        val cerrarSesion = {
+                            pantallaActual = "login"
+                            sesionRemotaViewModel.cerrar()
+                        }
+                        if (sesion.rol == RolRemoto.CLIENTE) {
+                            ComprasConBackend(
+                                host = BuildConfig.CATALOGO_HOST,
+                                sesion = sesion,
+                                modelo = sesionRemotaViewModel,
+                                onCerrarSesion = cerrarSesion,
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        } else {
+                            AdministracionConBackend(
+                                host = BuildConfig.CATALOGO_HOST,
+                                sesion = sesion,
+                                onCerrarSesion = cerrarSesion,
+                                modifier = Modifier.padding(innerPadding)
+                            )
                         }
                     } else when (pantallaActual) {
 

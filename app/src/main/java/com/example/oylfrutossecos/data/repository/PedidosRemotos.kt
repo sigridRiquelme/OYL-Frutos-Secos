@@ -12,7 +12,7 @@ import retrofit2.http.PATCH
 import retrofit2.http.Path
 
 internal data class ItemCompra(val idProducto: Int, val cantidad: Int)
-internal enum class ModalidadCompra { RETIRO, DESPACHO }
+internal enum class ModalidadCompra(val etiqueta: String) { RETIRO("Retiro"), DESPACHO("Despacho") }
 internal data class SolicitudCompra(
     val solicitudId: String,
     val nombreCliente: String,
@@ -22,7 +22,12 @@ internal data class SolicitudCompra(
     val productos: List<ItemCompra>
 )
 
-internal data class PedidoRemoto(val numero: String, val total: Int, val estado: String)
+internal data class PedidoRemoto(
+    val numero: String,
+    val total: Int,
+    val estado: EstadoPedidoRemoto,
+    val modalidad: ModalidadCompra
+)
 
 internal enum class EstadoPedidoRemoto(val etiqueta: String) {
     PENDIENTE("Pendiente"),
@@ -43,18 +48,18 @@ internal class PedidosRemotos(host: String) {
     suspend fun comprar(sesion: SesionRemota, solicitud: SolicitudCompra): PedidoRemoto =
         api.comprar("Bearer ${sesion.token}", solicitud)
 
-    suspend fun historial(sesion: SesionRemota): List<PedidoRemoto> =
-        api.historial("Bearer ${sesion.token}")
+    suspend fun historial(sesion: SesionRemota): List<Pedido> =
+        api.historial("Bearer ${sesion.token}").map { it.aPedido() }
 
     suspend fun listarParaAdministracion(sesion: SesionRemota): List<Pedido> =
-        api.listar("Bearer ${sesion.token}").map { it.paraGestion() }
+        api.listar("Bearer ${sesion.token}").map { it.aPedido() }
 
     suspend fun cambiarEstado(sesion: SesionRemota, numero: String, estado: EstadoPedidoRemoto): Pedido =
-        api.cambiarEstado("Bearer ${sesion.token}", numero, CambioEstado(estado)).paraGestion()
+        api.cambiarEstado("Bearer ${sesion.token}", numero, CambioEstado(estado)).aPedido()
 
     private data class CambioEstado(val estado: EstadoPedidoRemoto)
 
-    private data class PedidoAdministrativo(
+    private data class RespuestaPedido(
         val numero: String,
         val fecha: Long,
         val nombreCliente: String,
@@ -65,13 +70,13 @@ internal class PedidosRemotos(host: String) {
         val total: Int,
         val estado: EstadoPedidoRemoto
     ) {
-        fun paraGestion() = Pedido(
+        fun aPedido() = Pedido(
             numero = numero,
             fecha = fecha,
             clienteId = null,
             nombreCliente = nombreCliente,
             telefono = telefono,
-            modalidad = if (modalidad == ModalidadCompra.DESPACHO) "Despacho" else "Retiro",
+            modalidad = modalidad.etiqueta,
             direccion = direccion.orEmpty(),
             productos = productos,
             total = total,
@@ -87,16 +92,16 @@ internal class PedidosRemotos(host: String) {
         ): PedidoRemoto
 
         @GET("api/pedidos/mis-pedidos")
-        suspend fun historial(@Header("Authorization") token: String): List<PedidoRemoto>
+        suspend fun historial(@Header("Authorization") token: String): List<RespuestaPedido>
 
         @GET("api/pedidos")
-        suspend fun listar(@Header("Authorization") token: String): List<PedidoAdministrativo>
+        suspend fun listar(@Header("Authorization") token: String): List<RespuestaPedido>
 
         @PATCH("api/pedidos/{numero}/estado")
         suspend fun cambiarEstado(
             @Header("Authorization") token: String,
             @Path("numero") numero: String,
             @Body datos: CambioEstado
-        ): PedidoAdministrativo
+        ): RespuestaPedido
     }
 }

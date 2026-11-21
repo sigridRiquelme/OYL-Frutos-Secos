@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.oylfrutossecos.data.repository.AutenticacionRemota
 import com.example.oylfrutossecos.data.repository.DatosPerfil
@@ -21,6 +22,7 @@ internal fun PerfilConBackend(
     host: String,
     sesion: SesionRemota,
     onPerfilActualizado: (String) -> Unit,
+    onCerrarSesion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val repositorio = remember(host) { AutenticacionRemota(host) }
@@ -49,9 +51,9 @@ internal fun PerfilConBackend(
     val mensaje = error
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Text("Mi perfil", style = MaterialTheme.typography.headlineMedium)
+        Text("Mi perfil", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         when {
             datos == null && mensaje == null -> CircularProgressIndicator()
             datos == null -> {
@@ -62,13 +64,9 @@ internal fun PerfilConBackend(
                 }) { Text("Reintentar") }
             }
             edicion == null -> {
-                Text(datos.nombre, style = MaterialTheme.typography.titleLarge)
-                Text("Usuario: ${datos.nombreUsuario}")
-                Text("Correo: ${datos.correo}")
-                Text("Teléfono: ${datos.telefono}")
-                Text("Dirección: ${datos.direccion.orEmpty().ifBlank { "Sin dirección" }}")
+                ResumenPerfilOYL(datos.nombre, datos.nombreUsuario, datos.correo, datos.telefono, datos.direccion.orEmpty())
                 if (actualizado) Text("Perfil actualizado.")
-                Button(onClick = {
+                Button(modifier = Modifier.fillMaxWidth(), onClick = {
                     actualizado = false
                     mostrarErrores = false
                     error = null
@@ -76,6 +74,7 @@ internal fun PerfilConBackend(
                 }) { Text("Editar perfil") }
             }
             else -> {
+                Text("Editar información personal", style = MaterialTheme.typography.titleMedium)
                 val nombreValido = ValidadorDatosCliente.nombreValido(edicion.nombre)
                 val usuarioValido = ValidadorDatosCliente.usuarioValido(edicion.nombreUsuario)
                 val correoValido = edicion.correo.trim().length <= 150 &&
@@ -96,6 +95,7 @@ internal fun PerfilConBackend(
 
                 if (mensaje != null) Text(mensaje, color = MaterialTheme.colorScheme.error)
                 Button(
+                    modifier = Modifier.fillMaxWidth(),
                     enabled = !guardando,
                     onClick = {
                         mostrarErrores = true
@@ -124,11 +124,18 @@ internal fun PerfilConBackend(
                         }
                     }
                 ) { Text(if (guardando) "Guardando…" else "Guardar cambios") }
-                TextButton(enabled = !guardando, onClick = {
+                OutlinedButton(modifier = Modifier.fillMaxWidth(), enabled = !guardando, onClick = {
                     borrador = null
                     error = null
                 }) { Text("Cancelar edición") }
             }
+        }
+        if (edicion == null) {
+            OutlinedButton(
+                onClick = onCerrarSesion,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) { Text("Cerrar sesión") }
         }
     }
 }

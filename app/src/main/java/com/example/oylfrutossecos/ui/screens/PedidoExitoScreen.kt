@@ -28,7 +28,9 @@ fun PedidoExitoScreen(
     modalidad: String,
     total: Int,
     onVolverInicio: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onVerPedidos: (() -> Unit)? = null,
+    estado: String = "Pendiente"
 ) {
 
     // Estado que inicia la animación
@@ -115,7 +117,7 @@ fun PedidoExitoScreen(
         ) {
 
             Text(
-                text = "¡Solicitud registrada!",
+                text = if (onVerPedidos == null) "¡Solicitud registrada!" else "¡Pedido confirmado!",
 
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
@@ -149,21 +151,27 @@ fun PedidoExitoScreen(
                         style = MaterialTheme.typography.headlineSmall
                     )
 
-                    Text("Estado: Pendiente")
+                    Text("Estado: $estado")
 
                     Text("Modalidad: $modalidad")
 
-                    Text("Total: $${total}")
+                    Text("Total: ${precioOYL(total)}")
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Pedido guardado localmente en este dispositivo.",
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center
-            )
+            if (onVerPedidos == null) {
+                Text(
+                    text = "Pedido guardado localmente en este dispositivo.",
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                Button(onClick = onVerPedidos, modifier = Modifier.fillMaxWidth()) {
+                    Text("Ver mis pedidos")
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
