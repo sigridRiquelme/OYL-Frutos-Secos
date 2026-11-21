@@ -3,9 +3,20 @@ package com.example.oylfrutossecos.data.repository
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
 
 enum class RolRemoto { CLIENTE, ADMINISTRADOR }
+
+internal data class DatosPerfil(
+    val nombre: String,
+    val nombreUsuario: String,
+    val correo: String,
+    val telefono: String,
+    val direccion: String?
+)
 
 class RegistroRemoto(
     val nombre: String,
@@ -35,6 +46,12 @@ class AutenticacionRemota(host: String, puerto: Int = 8083) {
         api.registrar(datos)
     }
 
+    internal suspend fun consultarPerfil(sesion: SesionRemota): DatosPerfil =
+        api.consultarPerfil("Bearer ${sesion.token}")
+
+    internal suspend fun actualizarPerfil(sesion: SesionRemota, datos: DatosPerfil): DatosPerfil =
+        api.actualizarPerfil("Bearer ${sesion.token}", datos)
+
     suspend fun iniciarSesion(usuario: String, contrasena: String): SesionRemota {
         val respuesta = api.iniciarSesion(Credenciales(usuario, contrasena))
         val cliente = checkNotNull(respuesta.cliente)
@@ -47,6 +64,15 @@ class AutenticacionRemota(host: String, puerto: Int = 8083) {
     }
 
     private interface AuthApi {
+        @GET("api/clientes/me")
+        suspend fun consultarPerfil(@Header("Authorization") token: String): DatosPerfil
+
+        @PUT("api/clientes/me")
+        suspend fun actualizarPerfil(
+            @Header("Authorization") token: String,
+            @Body datos: DatosPerfil
+        ): DatosPerfil
+
         @POST("api/auth/registro")
         suspend fun registrar(@Body datos: RegistroRemoto)
 

@@ -1,6 +1,8 @@
 package com.example.oylfrutossecos.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,7 +23,7 @@ import com.example.oylfrutossecos.ui.viewmodel.SesionRemotaViewModel
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 
-private enum class PantallaCompra { CATALOGO, CARRITO, CONFIRMACION, HISTORIAL }
+private enum class PantallaCompra { CATALOGO, CARRITO, CONFIRMACION, HISTORIAL, PERFIL }
 
 @Composable
 internal fun ComprasConBackend(
@@ -78,12 +80,13 @@ internal fun ComprasConBackend(
 
     Column(modifier.fillMaxSize()) {
         if (!bloqueado) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TextButton(onClick = { abrir(PantallaCompra.CATALOGO) }) { Text("Catálogo") }
                 TextButton(onClick = { abrir(PantallaCompra.CARRITO) }) {
                     Text("Carrito (${carrito.cantidades.values.sum()})")
                 }
                 TextButton(onClick = { abrir(PantallaCompra.HISTORIAL) }) { Text("Mis pedidos") }
+                TextButton(onClick = { abrir(PantallaCompra.PERFIL) }) { Text("Mi perfil") }
             }
         }
         when {
@@ -131,9 +134,15 @@ internal fun ComprasConBackend(
                         )
                     },
                     modifier = Modifier.weight(1f),
-                    nombreInicial = sesion.nombre
+                    nombreInicial = modelo.nombreMostrado
                 )
             }
+            pantalla == PantallaCompra.PERFIL -> PerfilConBackend(
+                host = host,
+                sesion = sesion,
+                onPerfilActualizado = { modelo.actualizarNombre(sesion, it) },
+                modifier = Modifier.weight(1f)
+            )
             error != null -> Column(Modifier.padding(16.dp)) {
                 Text(error)
                 Button(onClick = {

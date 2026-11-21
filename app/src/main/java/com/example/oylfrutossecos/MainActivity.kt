@@ -119,7 +119,7 @@ class MainActivity : ComponentActivity() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(sesion.nombre)
+                                    Text(sesionRemotaViewModel.nombreMostrado)
                                     Text(if (sesion.rol == RolRemoto.ADMINISTRADOR) "Administrador" else "Cliente")
                                 }
                                 TextButton(onClick = {

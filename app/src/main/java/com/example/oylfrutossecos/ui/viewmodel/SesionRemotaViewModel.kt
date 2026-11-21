@@ -23,6 +23,8 @@ class SesionRemotaViewModel : ViewModel() {
     val sesion = _sesion.asStateFlow()
     private var vencimiento: Job? = null
     private var envio: Job? = null
+    internal var nombreMostrado by mutableStateOf("")
+        private set
     internal val carrito = CarritoViewModel()
     internal var solicitud by mutableStateOf<SolicitudCompra?>(null)
         private set
@@ -35,6 +37,7 @@ class SesionRemotaViewModel : ViewModel() {
 
     fun iniciar(sesion: SesionRemota) {
         cerrar()
+        nombreMostrado = sesion.nombre
         _sesion.value = sesion
         vencimiento = viewModelScope.launch {
             delay(sesion.expiraEnSegundos.seconds)
@@ -46,6 +49,7 @@ class SesionRemotaViewModel : ViewModel() {
         vencimiento?.cancel()
         vencimiento = null
         _sesion.value = null
+        nombreMostrado = ""
         envio?.cancel()
         envio = null
         solicitud = null
@@ -88,5 +92,9 @@ class SesionRemotaViewModel : ViewModel() {
     internal fun limpiarResultadoCompra() {
         pedido = null
         errorCompra = null
+    }
+
+    internal fun actualizarNombre(sesion: SesionRemota, nombre: String) {
+        if (_sesion.value === sesion) nombreMostrado = nombre
     }
 }

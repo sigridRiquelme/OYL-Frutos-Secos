@@ -17,15 +17,13 @@ import androidx.compose.runtime.collectAsState
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.EstadoRegistro
 import com.example.oylfrutossecos.feature.autenticacion.domain.ValidadorRegistro
+import com.example.oylfrutossecos.feature.autenticacion.domain.ValidadorDatosCliente
 import com.example.oylfrutossecos.feature.autenticacion.platform.ValidadorCorreoAndroid
 import com.example.oylfrutossecos.data.repository.RegistroRemoto
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
-
-private val usuarioBackend = Regex("[a-zA-Z0-9._-]{3,80}")
-private val telefonoBackend = Regex("[+0-9 ()-]{1,30}")
 
 @Composable
 fun RegistroScreen(
@@ -60,24 +58,25 @@ fun RegistroScreen(
 
     // Validaciones centralizadas
     val nombreInvalido =
-        !ValidadorRegistro.esNombreValido(nombre) || (remoto && nombre.trim().length > 120)
+        if (remoto) !ValidadorDatosCliente.nombreValido(nombre)
+        else !ValidadorRegistro.esNombreValido(nombre)
 
     val nombreUsuarioInvalido =
-        !ValidadorRegistro.esUsuarioValido(nombreUsuario) ||
-                (remoto && !usuarioBackend.matches(nombreUsuario.trim()))
+        if (remoto) !ValidadorDatosCliente.usuarioValido(nombreUsuario)
+        else !ValidadorRegistro.esUsuarioValido(nombreUsuario)
 
     val correoInvalido =
         !ValidadorCorreoAndroid.esValido(correo.trim()) || (remoto && correo.trim().length > 150)
 
     val telefonoInvalido =
-        !ValidadorRegistro.esTelefonoValido(telefono) ||
-                (remoto && !telefonoBackend.matches(telefono.trim()))
+        if (remoto) !ValidadorDatosCliente.telefonoValido(telefono)
+        else !ValidadorRegistro.esTelefonoValido(telefono)
 
     val contrasenaInvalida =
         if (remoto) contrasena.isBlank() || contrasena.length < 8 ||
                 contrasena.toByteArray(Charsets.UTF_8).size > 72
         else !ValidadorRegistro.esContrasenaValida(contrasena)
-    val direccionInvalida = remoto && direccion.trim().length > 250
+    val direccionInvalida = remoto && !ValidadorDatosCliente.direccionValida(direccion)
 
 
     Column(

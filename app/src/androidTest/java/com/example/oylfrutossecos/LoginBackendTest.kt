@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.oylfrutossecos.ui.screens.precioOYL
@@ -22,6 +23,30 @@ import org.junit.runner.RunWith
 class LoginBackendTest {
     @get:Rule
     val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun guardaElPerfilYLoRecuperaAlVolverAEntrar() {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("oylProbarPerfil") == "true")
+        iniciarSesion()
+        fun abrirPerfil() {
+            compose.onNode(hasClickAction() and hasText("Mi perfil")).performScrollTo().performClick()
+            esperarTexto("Editar perfil")
+        }
+
+        abrirPerfil()
+        compose.onNodeWithText("Editar perfil").performScrollTo().performClick()
+        val direccion = "Av. Prueba USB 123"
+        compose.onNode(hasSetTextAction() and hasText("Dirección (opcional)"))
+            .performScrollTo().performTextReplacement(direccion)
+        compose.onNodeWithText("Guardar cambios").performScrollTo().performClick()
+        esperarTexto("Perfil actualizado.")
+        compose.onNodeWithText("Dirección: $direccion").assertIsDisplayed()
+        compose.onNodeWithText("Cerrar sesión").performClick()
+
+        iniciarSesion(desdeBienvenida = false)
+        abrirPerfil()
+        compose.onNodeWithText("Dirección: $direccion").assertIsDisplayed()
+    }
 
     @Test
     fun registraUnaCuentaEIniciaSesionDesdeAndroid() {
@@ -81,14 +106,14 @@ class LoginBackendTest {
         compose.onNodeWithText("PENDIENTE · ${precioOYL(4500)}").assertIsDisplayed()
     }
 
-    private fun iniciarSesion() {
+    private fun iniciarSesion(desdeBienvenida: Boolean = true) {
         val argumentos = InstrumentationRegistry.getArguments()
         val usuario = argumentos.getString("oylUsuarioPrueba").orEmpty()
         val clave = argumentos.getString("oylClavePrueba").orEmpty()
         val nombre = argumentos.getString("oylNombrePrueba").orEmpty()
         assumeTrue(usuario.isNotBlank() && clave.isNotBlank() && nombre.isNotBlank())
 
-        compose.onNodeWithText("Comenzar").performClick()
+        if (desdeBienvenida) compose.onNodeWithText("Comenzar").performClick()
         compose.onNode(hasSetTextAction() and hasText("Nombre de usuario")).performTextInput(usuario)
         compose.onNode(hasSetTextAction() and hasText("Contraseña")).performTextInput(clave)
         compose.onNodeWithText("Iniciar sesión").performScrollTo().performClick()
