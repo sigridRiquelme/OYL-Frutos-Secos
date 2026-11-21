@@ -1,5 +1,5 @@
-param(
-    [string]$Proyecto = $PSScriptRoot,
+﻿param(
+    [string]$Proyecto = (Split-Path -Parent $PSScriptRoot),
     [string]$Salida = 'app/build/reports/resumen-cobertura.md'
 )
 $ErrorActionPreference = 'Stop'
@@ -29,9 +29,9 @@ $texto.Add('# Resultado de cobertura unitaria Android')
 $texto.Add('')
 $texto.Add(('Generado: {0:yyyy-MM-dd HH:mm:ss zzz}' -f (Get-Date)))
 $texto.Add('')
-$texto.Add(('Líneas: **{0}/{1} ({2:N2} %)**. Cálculo ponderado con el contador LINE del informe JaCoCo.' -f $total.Cubiertas, $total.Total, $total.Porcentaje))
+$texto.Add(('LÃ­neas: **{0}/{1} ({2:N2} %)**. CÃ¡lculo ponderado con el contador LINE del informe JaCoCo.' -f $total.Cubiertas, $total.Total, $total.Porcentaje))
 $texto.Add(('Pruebas: {0}; aprobadas: {1}; fallidas: {2}; errores: {3}; omitidas: {4}.' -f $pruebas, $aprobadas, $fallidas, $errores, $omitidas))
-$texto.Add(('Mínimo 80 %: {0}. Objetivo 85 %: {1}.' -f $(if ($total.Porcentaje -ge 80) {'CUMPLE'} else {'NO CUMPLE'}), $(if ($total.Porcentaje -ge 85) {'CUMPLE'} else {'NO CUMPLE'})))
+$texto.Add(('MÃ­nimo 80 %: {0}. Objetivo 85 %: {1}.' -f $(if ($total.Porcentaje -ge 80) {'CUMPLE'} else {'NO CUMPLE'}), $(if ($total.Porcentaje -ge 85) {'CUMPLE'} else {'NO CUMPLE'})))
 $texto.Add('')
 $texto.Add('Solo pruebas JVM de src/test; no incluye resultados instrumentados de src/androidTest.')
 $texto.Add('')
@@ -58,4 +58,5 @@ $destino = if ([IO.Path]::IsPathRooted($Salida)) { $Salida } else { Join-Path $P
 New-Item -ItemType Directory -Force -Path (Split-Path $destino) | Out-Null
 $texto | Set-Content -LiteralPath $destino -Encoding utf8
 Write-Output ($texto -join [Environment]::NewLine)
-if ($fallidas + $errores -gt 0) { throw 'Hay pruebas fallidas: no se puede certificar una ejecución correcta.' }
+if ($fallidas + $errores -gt 0) { throw 'Hay pruebas fallidas: no se puede certificar una ejecuciÃ³n correcta.' }
+
