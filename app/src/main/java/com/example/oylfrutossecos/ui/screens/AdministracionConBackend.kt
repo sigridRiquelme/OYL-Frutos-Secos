@@ -82,7 +82,12 @@ internal fun AdministracionConBackend(
             } catch (cancelada: CancellationException) {
                 throw cancelada
             } catch (fallo: Exception) {
-                val mensaje = mensajeAdministracion(fallo, "No pudimos confirmar el cambio. Recarga antes de repetir la operación.")
+                val mensajePorDefecto = if (conservarFormulario) {
+                    "No pudimos confirmar el cambio. Vuelve a guardar desde este formulario con los mismos datos."
+                } else {
+                    "No pudimos confirmar el cambio. Recarga antes de repetir la operación."
+                }
+                val mensaje = mensajeAdministracion(fallo, mensajePorDefecto)
                 aviso = mensaje
                 resultado(mensaje)
                 val codigo = (fallo as? HttpException)?.code()
@@ -285,5 +290,7 @@ private fun mensajeAdministracion(fallo: Exception, porDefecto: String): String 
         401, 403 -> "Tu sesión no tiene acceso a esta operación. Vuelve a iniciar sesión."
         404 -> "El registro ya no está disponible o aún no tiene inventario."
         409 -> "El backend rechazó el cambio. Revisa el stock o el estado actual."
+        413 -> "La fotografía supera el tamaño permitido."
+        415 -> "No se pudo validar la fotografía. Elige otra imagen."
         else -> porDefecto
     }

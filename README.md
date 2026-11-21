@@ -35,7 +35,7 @@ En **Administración → Pedidos → Ver detalles**, un pedido de **Despacho** c
 
 Las pruebas unitarias de Retrofit usan un servidor en la propia máquina. Las pruebas de interfaz cubren carga, fallos, privacidad y visibilidad. La prueba de red real `demoRealMuestraMarcadorDeEntrega` requiere habilitación explícita mediante el argumento de instrumentación `oylProbarNominatim=true`. Ejecútala en el único teléfono de la demo.
 
-# Administración de productos
+## Administración de productos
 
 Con el backend actualizado, inicia sesión como administrador y abre **Gestión de
 Productos → + Nuevo producto**. Ingresa el stock inicial y, si quieres adjuntar
