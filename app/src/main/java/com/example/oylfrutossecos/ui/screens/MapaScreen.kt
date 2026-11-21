@@ -16,12 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.example.oylfrutossecos.feature.pedidos.data.UbicacionDespacho
 import org.maplibre.android.MapLibre
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraPosition
@@ -57,9 +60,21 @@ private val tiendasDemoOYL = listOf(
 
 @Composable
 fun MapaScreen(modifier: Modifier = Modifier) {
+    MapaOyl(modifier)
+}
+
+@Composable
+internal fun MapaDespacho(ubicacion: UbicacionDespacho.Encontrada, modifier: Modifier = Modifier) {
+    key(ubicacion) { MapaOyl(modifier, ubicacion) }
+}
+
+@Composable
+private fun MapaOyl(modifier: Modifier, entrega: UbicacionDespacho.Encontrada? = null) {
     val contexto = LocalContext.current
     var tiendaSeleccionadaId by rememberSaveable { mutableIntStateOf(1) }
     var mapaControl by remember { mutableStateOf<MapLibreMap?>(null) }
+    var errorMapa by remember { mutableStateOf(false) }
+    var marcadorEntregaListo by remember { mutableStateOf(false) }
 
     // Se crea el mapa una sola vez mientras esta pantalla permanece abierta.
     val mapaVista = remember(contexto) {
@@ -116,8 +131,19 @@ fun MapaScreen(modifier: Modifier = Modifier) {
             reanudar()
         }
 
+        val observarError = MapView.OnDidFailLoadingMapListener { errorMapa = true }
+        if (entrega != null) mapaVista.addOnDidFailLoadingMapListener(observarError)
         mapaVista.getMapAsync { mapa ->
             mapa.setStyle(ESTILO_MAPA_OYL) {
+                if (entrega != null) {
+                    val punto = LatLng(entrega.latitud, entrega.longitud)
+                    mapa.moveCamera(CameraUpdateFactory.newLatLngZoom(punto, 16.0))
+                    mapa.addMarker(
+                        MarkerOptions().position(punto).title("Entrega").snippet(entrega.direccion)
+                    )
+                    marcadorEntregaListo = true
+                    return@setStyle
+                }
                 // Vista general que permite ver las tres tiendas de Santiago.
                 mapa.cameraPosition = CameraPosition.Builder()
                     .target(LatLng(-33.4402, -70.6575))
@@ -150,6 +176,7 @@ fun MapaScreen(modifier: Modifier = Modifier) {
         }
 
         onDispose {
+            if (entrega != null) mapaVista.removeOnDidFailLoadingMapListener(observarError)
             duenoCicloVida?.lifecycle?.removeObserver(observador)
             mapaControl = null
             detener()
@@ -159,11 +186,11 @@ fun MapaScreen(modifier: Modifier = Modifier) {
 
     Column(
         modifier = modifier
-            .fillMaxSize()
+            .then(if (entrega == null) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        Column(Modifier.padding(start = 18.dp, end = 18.dp, top = 15.dp)) {
+        if (entrega == null) Column(Modifier.padding(start = 18.dp, end = 18.dp, top = 15.dp)) {
             Text(
                 text = "Nuestras tiendas demo",
                 style = MaterialTheme.typography.headlineSmall,
@@ -177,15 +204,30 @@ fun MapaScreen(modifier: Modifier = Modifier) {
             )
         }
 
+        if (entrega != null) {
+            Text(entrega.direccion)
+            Text(
+                "Ubicación aproximada de OpenStreetMap. Verifica la dirección antes de usarla.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            if (errorMapa) Text("No se pudo cargar el mapa. La dirección encontrada se muestra arriba.")
+        }
+
         Card(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             shape = RoundedCornerShape(18.dp),
             elevation = CardDefaults.cardElevation(2.dp)
         ) {
-            Box(Modifier.fillMaxWidth().height(280.dp)) {
+            Box(Modifier.fillMaxWidth().height(if (entrega == null) 280.dp else 220.dp)) {
                 AndroidView(
                     factory = { mapaVista },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize().then(
+                        if (marcadorEntregaListo) {
+                            Modifier.semantics { contentDescription = "Mapa con marcador de entrega" }
+                        } else {
+                            Modifier
+                        }
+                    )
                 )
                 // Atribucion obligatoria visible para los datos y el estilo utilizados.
                 Text(
@@ -199,6 +241,8 @@ fun MapaScreen(modifier: Modifier = Modifier) {
                 )
             }
         }
+
+        if (entrega != null) return@Column
 
         tiendasDemoOYL.forEach { tienda ->
             val seleccionada = tienda.id == tiendaSeleccionadaId

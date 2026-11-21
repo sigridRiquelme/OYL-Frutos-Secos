@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.oylfrutossecos.feature.pedidos.domain.ReglasEstadoPedido
 import com.example.oylfrutossecos.data.local.PedidoLocal
+import com.example.oylfrutossecos.feature.pedidos.data.esDespachoConDireccion
 
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -80,6 +81,8 @@ fun GestionPedidosScreen(
         mutableStateOf<String?>(null)
     }
 
+    var mostrarUbicacion by remember(numeroPedidoSeleccionado) { mutableStateOf(false) }
+
     var guardando by remember {
         mutableStateOf(false)
     }
@@ -127,7 +130,12 @@ fun GestionPedidosScreen(
 
         val nuevoEstado = estadoPorConfirmar
 
-        if (nuevoEstado != null) {
+        val permiteUbicacion = esDespachoConDireccion(
+            pedidoSeleccionado.modalidad, pedidoSeleccionado.direccion
+        )
+        if (mostrarUbicacion && permiteUbicacion) {
+            DialogoUbicacionDespacho(pedidoSeleccionado.direccion) { mostrarUbicacion = false }
+        } else if (nuevoEstado != null) {
 
             // Confirmación antes de cambiar estado
             AlertDialog(
@@ -245,10 +253,16 @@ fun GestionPedidosScreen(
                             "Modalidad: ${pedidoSeleccionado.modalidad}"
                         )
 
-                        if (pedidoSeleccionado.modalidad == "Despacho") {
+                        if (pedidoSeleccionado.modalidad.equals("Despacho", ignoreCase = true)) {
                             Text(
                                 "Dirección: ${pedidoSeleccionado.direccion}"
                             )
+                        }
+
+                        if (permiteUbicacion) {
+                            TextButton(onClick = { mostrarUbicacion = true }) {
+                                Text("Ver ubicación del despacho")
+                            }
                         }
 
                         HorizontalDivider()
