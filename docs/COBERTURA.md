@@ -26,7 +26,46 @@ La copia intacta de la base funcional se ejecutó con el mismo `cobertura.init.g
 
 El 65,6 % provisional de las capturas correspondía a cuatro grupos y a otro motor. El 13 % de la aplicación completa tampoco es directamente comparable con este informe de capas.
 
-## Pruebas incorporadas
+## Resultado final verificado
+
+Ejecución `:app:verificarCoberturaLogicaDebug` con resultado `BUILD SUCCESSFUL` el 21 de noviembre de 2026. Se comprobaron los XML JUnit y JaCoCo generados en el equipo, no solo la salida de consola.
+
+| Métrica | Inicial | Final |
+| --- | ---: | ---: |
+| Pruebas unitarias | 245 | 281 |
+| Aprobadas | 245 | 281 |
+| Fallidas / errores / omitidas | 0 / 0 / 0 | 0 / 0 / 0 |
+| Líneas cubiertas / evaluadas | 820 / 1424 | 1330 / 1424 |
+| Cobertura de líneas de las capas | 57,58 % | **93,40 %** |
+| Cumple 80 % | No | **Sí** |
+| Cumple 85 % | No | **Sí** |
+
+Se añadieron 36 pruebas y se cubrieron 510 líneas adicionales, manteniendo el mismo denominador. La mejora es de 35,81 puntos porcentuales. Cobertura final de ramas: 493/566 = 87,10 %.
+
+| Grupo final | Líneas cubiertas / evaluadas | Cobertura |
+| --- | ---: | ---: |
+| ViewModels, estados y factories | 463 / 483 | 95,86 % |
+| Repositories y clientes remotos | 253 / 272 | 93,01 % |
+| Reglas de negocio (`feature/**/domain`) | 293 / 295 | 99,32 % |
+| Validaciones de compatibilidad | 28 / 31 | 90,32 % |
+| Persistencia e inicialización (`data.local`) | 159 / 182 | 87,36 % |
+
+La tabla completa por paquete y el listado de clases bajo 85 % están en [evidencias/resumen-final.md](evidencias/resumen-final.md). El XML final está en [evidencias/cobertura-final.xml](evidencias/cobertura-final.xml).
+
+**Contraste global:** al incluir Compose y `MainActivity`, la misma suite cubre **1330/6106 líneas = 21,78 %**. Es un alcance diferente; el 93,40 % no es cobertura de toda la aplicación. El informe completo permite revisar la integración que permanece dentro de los composables.
+
+Pendientes que permanecen incluidos en el denominador:
+
+- Apertura singleton de `AppDatabase` y migraciones 1→2 y 2→3: sin ejecutar; conviene comprobarlas con una base Room real y esquemas exportados.
+- `GeocodificadorDespacho.buscar`: solo se verifica la configuración deshabilitada predeterminada. El cuerpo de su corrutina tiene 3/20 líneas; quedan caché, restricciones y limitación temporal del adaptador. La consulta Retrofit, respuestas y errores de Nominatim sí tienen pruebas existentes.
+- `ValidadorCorreoAndroid`: 0/3 líneas; las pruebas del perfil utilizan un validador inyectado. No se oculta esta diferencia.
+- `ClienteViewModel` y sus corrutinas de registro/carga todavía tienen rutas sin ejecutar; el detalle está en el HTML y en el resumen.
+- DTO `PedidosRemotos.RespuestaPedido`: 12/22 líneas. Gson deserializa sin ejecutar todo su constructor; el mapeo a pedido y los contratos HTTP están comprobados. No se excluyen esas líneas.
+- Fotografías: aunque el conjunto supera 85 % en líneas, quedan combinaciones EXIF y fallos de compresión sin cubrir. Las pruebas JVM usan imágenes reales y una URI de contenido con streams; la cámara, la galería del sistema y los gráficos físicos requieren pruebas de dispositivo.
+
+No se repitieron pruebas manuales en el celular ni pruebas instrumentadas: este resultado certifica exclusivamente la suite unitaria y el umbral del alcance documentado. Se conservan todas las pruebas preexistentes. La compilación de las fuentes de producción y de prueba finalizó correctamente.
+
+## Detalle de las pruebas incorporadas
 
 - Contratos reales de Retrofit con servidores HTTP efímeros en loopback: catálogo y stock, altas multipart, fotos opcionales, edición, estados, movimientos de inventario, JWT, clave idempotente, perfil, registro, pedidos e historial.
 - Rechazos HTTP, respuestas de autenticación inválidas y conexiones interrumpidas.
