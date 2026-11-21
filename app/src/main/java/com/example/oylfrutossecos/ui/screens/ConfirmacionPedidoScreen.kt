@@ -16,7 +16,8 @@ fun ConfirmacionPedidoScreen(
     cantidades: Map<Int, Int>,
     onVolver: () -> Unit,
     onConfirmar: (String, String, String, String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    nombreInicial: String = ""
 ) {
 
     // Productos que están en el carrito
@@ -31,7 +32,7 @@ fun ConfirmacionPedidoScreen(
 
     // Datos del formulario
     var nombre by rememberSaveable {
-        mutableStateOf("")
+        mutableStateOf(nombreInicial)
     }
 
     var telefono by rememberSaveable {

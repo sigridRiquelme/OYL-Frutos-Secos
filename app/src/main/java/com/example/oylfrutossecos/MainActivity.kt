@@ -8,10 +8,18 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -24,16 +32,21 @@ import com.example.oylfrutossecos.data.local.AppDatabase
 import com.example.oylfrutossecos.data.local.insertarProductosIniciales
 import com.example.oylfrutossecos.data.repository.ProductoRepository
 import com.example.oylfrutossecos.data.repository.ClienteRepository
+import com.example.oylfrutossecos.data.repository.AutenticacionRemota
+import com.example.oylfrutossecos.data.repository.RolRemoto
 // ViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ProductoViewModelFactory
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModel
 import com.example.oylfrutossecos.ui.viewmodel.ClienteViewModelFactory
+import com.example.oylfrutossecos.ui.viewmodel.SesionRemotaViewModel
 // Pantallas
 import com.example.oylfrutossecos.ui.screens.BienvenidaScreen
 import com.example.oylfrutossecos.ui.screens.LoginScreen
 import com.example.oylfrutossecos.ui.screens.RegistroScreen
 import com.example.oylfrutossecos.ui.screens.DashboardScreen
+import com.example.oylfrutossecos.ui.screens.CatalogoConBackend
+import com.example.oylfrutossecos.ui.screens.ComprasConBackend
 
 import com.example.oylfrutossecos.ui.theme.OYLFrutosSecosTheme
 
@@ -71,6 +84,10 @@ class MainActivity : ComponentActivity() {
             ClienteViewModelFactory(clienteRepository)
         )[ClienteViewModel::class.java]
 
+        val sesionRemotaViewModel = ViewModelProvider(this)[SesionRemotaViewModel::class.java]
+        val autenticacionRemota = BuildConfig.CATALOGO_HOST.takeIf { it.isNotBlank() }
+            ?.let { AutenticacionRemota(it) }
+
         // 4. MOSTRAR NUESTRA APLICACION
         setContent {
 
@@ -87,12 +104,47 @@ class MainActivity : ComponentActivity() {
                 var clienteIdActual by remember {
                     mutableStateOf<Int?>(null)
                 }
+                val sesionRemota by sesionRemotaViewModel.sesion.collectAsState()
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
 
-                    when (pantallaActual) {
+                    val sesion = sesionRemota
+                    if (sesion != null) {
+                        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(sesion.nombre)
+                                    Text(if (sesion.rol == RolRemoto.ADMINISTRADOR) "Administrador" else "Cliente")
+                                }
+                                TextButton(onClick = {
+                                    pantallaActual = "login"
+                                    sesionRemotaViewModel.cerrar()
+                                }) {
+                                    Text("Cerrar sesión")
+                                }
+                            }
+                            if (sesion.rol == RolRemoto.CLIENTE) {
+                                ComprasConBackend(
+                                    host = BuildConfig.CATALOGO_HOST,
+                                    sesion = sesion,
+                                    modelo = sesionRemotaViewModel,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            } else {
+                                CatalogoConBackend(
+                                    host = BuildConfig.CATALOGO_HOST,
+                                    rol = "Administrador",
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    } else when (pantallaActual) {
 
                         "bienvenida" -> {
                             BienvenidaScreen(
@@ -113,6 +165,13 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 clienteViewModel = clienteViewModel,
                                 modifier = Modifier.padding(innerPadding),
+                                iniciarSesionRemota = autenticacionRemota?.let { autenticacion ->
+                                    { usuario, contrasena ->
+                                        sesionRemotaViewModel.iniciar(
+                                            autenticacion.iniciarSesion(usuario, contrasena)
+                                        )
+                                    }
+                                },
 
                                 onRegistrarse = {
                                     pantallaActual = "registro"

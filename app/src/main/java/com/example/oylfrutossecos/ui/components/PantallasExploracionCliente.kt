@@ -3,9 +3,11 @@ package com.example.oylfrutossecos.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.example.oylfrutossecos.BuildConfig
 
 import com.example.oylfrutossecos.data.model.ProductoCatalogo
 import com.example.oylfrutossecos.ui.screens.CatalogoScreen
+import com.example.oylfrutossecos.ui.screens.CatalogoConBackend
 import com.example.oylfrutossecos.ui.screens.DetalleProductoScreen
 
 @Composable
@@ -26,11 +28,11 @@ fun PantallasExploracionCliente(
         // Mostrar catálogo de productos
         "Catalogo" -> {
 
-            CatalogoScreen(
-                productos = productos,
-                modifier = modifier,
-                onVerDetalle = onVerDetalle
-            )
+            if (BuildConfig.CATALOGO_HOST.isBlank()) {
+                CatalogoScreen(productos, modifier, onVerDetalle)
+            } else {
+                CatalogoConBackend(BuildConfig.CATALOGO_HOST, rol, modifier)
+            }
         }
 
         // Mostrar detalle del producto seleccionado
