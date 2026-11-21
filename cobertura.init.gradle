@@ -1,0 +1,60 @@
+import org.gradle.api.tasks.testing.Test
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
+import org.gradle.testing.jacoco.tasks.JacocoReport
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
+
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.project(':app')
+    app.pluginManager.apply('jacoco')
+    app.jacoco.toolVersion = '0.8.14'
+    def tests = app.tasks.named('testDebugUnitTest', Test)
+    tests.configure {
+        extensions.getByType(JacocoTaskExtension).includes = ['com.example.oylfrutossecos.*']
+        extensions.getByType(JacocoTaskExtension).includeNoLocationClasses = true
+    }
+    // Capas no visuales: incluye persistencia, adaptadores y modelos completos.
+    def classes = app.fileTree(app.layout.buildDirectory.dir('intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes')) {
+        include 'com/example/oylfrutossecos/data/**/*.class'
+        include 'com/example/oylfrutossecos/feature/**/*.class'
+        include 'com/example/oylfrutossecos/ui/viewmodel/**/*.class'
+        include 'com/example/oylfrutossecos/ui/validation/**/*.class'
+        // Implementaciones generadas por Room.
+        exclude '**/*_Impl*.class'
+    }
+    def report = app.tasks.register('coberturaLogicaDebug', JacocoReport) {
+        dependsOn tests
+        executionData(tests.get())
+        classDirectories.from(classes)
+        sourceDirectories.from(app.file('src/main/java'))
+        reports { xml.required.set(true); html.required.set(true) }
+        doFirst {
+            if (classes.empty) throw new GradleException('No se encontraron clases: revisar ruta AGP.')
+            def data = tests.get().extensions.getByType(JacocoTaskExtension).destinationFile
+            if (!data.isFile() || data.length() == 0) throw new GradleException('Faltan datos JaCoCo.')
+        }
+    }
+    app.tasks.register('verificarCoberturaLogicaDebug', JacocoCoverageVerification) {
+        dependsOn report
+        executionData(tests.get())
+        classDirectories.from(classes)
+        sourceDirectories.from(app.file('src/main/java'))
+        violationRules {
+            rule {
+                element = 'BUNDLE'
+                limit { counter = 'LINE'; value = 'COVEREDRATIO'; minimum = 0.85 }
+            }
+        }
+    }
+    // Informe de contraste: también muestra Compose y MainActivity, sin ocultarlos.
+    def completo = app.tasks.register('coberturaCompletaDebug', JacocoReport) {
+        dependsOn tests
+        executionData(tests.get())
+        classDirectories.from(app.fileTree(app.layout.buildDirectory.dir('intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes')) {
+            include 'com/example/oylfrutossecos/**/*.class'
+            exclude '**/*_Impl*.class', '**/BuildConfig.class', '**/R.class', '**/R$*.class'
+        })
+        sourceDirectories.from(app.file('src/main/java'))
+        reports { xml.required.set(true); html.required.set(true) }
+    }
+    report.configure { finalizedBy completo }
+}

@@ -18,12 +18,12 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import com.example.oylfrutossecos.feature.productos.domain.DatosNuevoProducto
 
-class CatalogoRemoto(host: String) {
+class CatalogoRemoto(host: String, puertoProductos: Int = 8081, puertoInventario: Int = 8082) {
     private val http = OkHttpClient.Builder().retryOnConnectionFailure(false).build()
-    private val baseFotos = "http://$host:8081"
+    private val baseFotos = "http://$host:$puertoProductos"
     private val gson = Gson()
-    private val productos = cliente(host, 8081).create(ProductosApi::class.java)
-    private val inventario = cliente(host, 8082).create(InventarioApi::class.java)
+    private val productos = cliente(host, puertoProductos).create(ProductosApi::class.java)
+    private val inventario = cliente(host, puertoInventario).create(InventarioApi::class.java)
 
     suspend fun cargar(): List<ProductoCatalogo> {
         val catalogo = productos.listar()
